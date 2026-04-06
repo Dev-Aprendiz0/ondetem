@@ -117,3 +117,13 @@ body {
         margin-right: 15px;
     }
 }
+#input-busca-mobile {
+    width: 0;
+    transition: width 0.3s ease;
+    border: 1px solid #ddd;
+}
+
+#input-busca-mobile.ativo {
+    width: 150px; /* Ajuste o tamanho conforme sua preferência */
+    display: block !important;
+}
