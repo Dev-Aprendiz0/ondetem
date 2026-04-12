@@ -127,3 +127,45 @@ body {
     width: 150px; /* Ajuste o tamanho conforme sua preferência */
     display: block !important;
 }
+/* Estilo para categorias ativas */
+.category-item.active .icon-circle {
+    background-color: #553A73;
+    color: white;
+    box-shadow: 0 4px 12px rgba(85, 58, 115, 0.3);
+}
+
+/* Transições suaves */
+.category-item .icon-circle,
+.service-card,
+.btn-danger {
+    transition: all 0.3s ease;
+}
+
+/* Animação de entrada dos cards */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.listings .row > div {
+    animation: slideIn 0.3s ease;
+}
+
+/* Responsividade melhorada para o mapa */
+@media (max-width: 768px) {
+    #map {
+        height: 300px;
+    }
+}
+
+@media (max-width: 480px) {
+    #map {
+        height: 250px;
+    }
+}
