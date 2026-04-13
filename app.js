@@ -9,8 +9,8 @@ const VAPID_PUBLIC_KEY = 'BNo6E7y9E_v1G9QyXq8zY4Z5R8J2L6m5n4b3v2c1x0z9a8s7d6f5g4
 // 1. Registra o Service Worker ao carregar a página
 if ('serviceWorker' in navigator && 'PushManager' in window) {
     window.addEventListener('load', () => {
-        // Atenção: Certifique-se de que o arquivo realmente se chama 'service-worker.js' na sua pasta raiz
-        navigator.serviceWorker.register('/service-worker.js')
+        // AQUI ESTAVA O ERRO: Adicionado o PONTO antes da barra
+        navigator.serviceWorker.register('./service-worker.js')
             .then(reg => {
                 console.log('✓ SW registrado para Push:', reg.scope);
                 configurarBotao(reg);
@@ -97,8 +97,8 @@ function mostrarNotificacaoLocal(titulo, corpo) {
         navigator.serviceWorker.ready.then(registration => {
             registration.showNotification(titulo, {
                 body: corpo,
-                icon: '/img/Logo-png 5.svg',
-                badge: '/img/Logo-png 5.svg',
+                icon: './img/Logo-png 5.svg', // Adicionado ponto aqui
+                badge: './img/Logo-png 5.svg', // Adicionado ponto aqui
                 vibrate: [100, 50, 100],
                 data: {
                     dateOfArrival: Date.now(),
