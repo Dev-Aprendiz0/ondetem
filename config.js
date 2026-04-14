@@ -56,6 +56,12 @@ const STORAGE_KEYS = {
     agendamentos: "ondetem_agendamentos"
 };
 
+const METODOS_PAGAMENTO = [
+    { valor: 'pix', label: 'Pix' },
+    { valor: 'cartao', label: 'Cartão de Crédito' },
+    { valor: 'local', label: 'Pagar no Estabelecimento' }
+];
+
 const MAPA_CONFIG = {
     coordenada_padrao: [-22.9345, -42.4951],
     zoom: 13

@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel Administrativo - Onde Tem?</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#553A73">
+
+  <style>
+    body {
+      background: #f0f2f5;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .admin-sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 260px;
+      height: 100vh;
+      background: linear-gradient(180deg, #553A73 0%, #3d2854 100%);
+      color: white;
+      padding: 0;
+      z-index: 1000;
+      overflow-y: auto;
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar-header {
+      padding: 25px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+    }
+
+    .sidebar-header h4 {
+      margin: 0;
+      font-weight: 700;
+      font-size: 1.3rem;
+      color: white;
+    }
+
+    .sidebar-header small {
+      opacity: 0.7;
+      font-size: 0.85rem;
+    }
+
+    .sidebar-nav {
+      padding: 20px 0;
+    }
+
+    .sidebar-nav a {
+      display: flex;
+      align-items: center;
+      padding: 12px 25px;
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      transition: all 0.3s ease;
+      border-left: 3px solid transparent;
+      gap: 12px;
+    }
+
+    .sidebar-nav a:hover,
+    .sidebar-nav a.active {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border-left-color: #fff;
+    }
+
+    .sidebar-nav a i {
+      font-size: 1.2rem;
+      width: 24px;
+      text-align: center;
+    }
+
+    .sidebar-divider {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      margin: 10px 20px;
+    }
+
+    /* Main Content */
+    .admin-main {
+      margin-left: 260px;
+      padding: 0;
+      min-height: 100vh;
+    }
+
+    .admin-topbar {
+      background: white;
+      padding: 15px 30px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 999;
+    }
+
+    .admin-topbar h5 {
+      margin: 0;
+      font-weight: 700;
+      color: var(--cor-dark);
+    }
+
+    .admin-content {
+      padding: 30px;
+    }
+
+    /* Dashboard Cards */
+    .dashboard-card {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+      height: 100%;
+    }
+
+    .dashboard-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    .dashboard-card .card-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      color: white;
+      margin-bottom: 15px;
+    }
+
+    .dashboard-card .card-icon.bg-purple { background: linear-gradient(135deg, #553A73, #7d5a9e); }
+    .dashboard-card .card-icon.bg-green { background: linear-gradient(135deg, #28a745, #5cb85c); }
+    .dashboard-card .card-icon.bg-blue { background: linear-gradient(135deg, #17a2b8, #5bc0de); }
+    .dashboard-card .card-icon.bg-orange { background: linear-gradient(135deg, #fd7e14, #f0ad4e); }
+
+    .dashboard-card .card-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--cor-dark);
+      line-height: 1;
+    }
+
+    .dashboard-card .card-label {
+      font-size: 0.9rem;
+      color: #888;
+      margin-top: 5px;
+    }
+
+    /* Tables */
+    .admin-table {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+
+    .admin-table .table-header {
+      padding: 20px 25px;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .admin-table .table-header h5 {
+      margin: 0;
+      font-weight: 700;
+      color: var(--cor-dark);
+    }
+
+    .admin-table table {
+      margin: 0;
+    }
+
+    .admin-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: #555;
+      border-bottom: 2px solid #e0e0e0;
+      padding: 12px 20px;
+      font-size: 0.9rem;
+    }
+
+    .admin-table td {
+      padding: 12px 20px;
+      vertical-align: middle;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .admin-table tr:hover {
+      background: #f8f9fa;
+    }
+
+    .badge-admin {
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .badge-ativo { background: #d4edda; color: #155724; }
+    .badge-pendente { background: #fff3cd; color: #856404; }
+    .badge-inativo { background: #f8d7da; color: #721c24; }
+
+    /* Sections */
+    .admin-section {
+      display: none;
+    }
+
+    .admin-section.active {
+      display: block;
+      animation: slideIn 0.3s ease;
+    }
+
+    /* Toggle sidebar mobile */
+    .btn-toggle-sidebar {
+      display: none;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: var(--cor-dark);
+    }
+
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+    }
+
+    /* Login do admin */
+    .admin-login-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #553A73 0%, #7d5a9e 100%);
+    }
+
+    .admin-login-card {
+      background: white;
+      border-radius: 15px;
+      padding: 40px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .admin-login-card h3 {
+      color: var(--cor-primaria);
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .admin-login-card p {
+      color: #888;
+      margin-bottom: 30px;
+    }
+
+    .user-avatar-sm {
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #553A73, #7d5a9e);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 992px) {
+      .admin-sidebar {
+        transform: translateX(-100%);
+      }
+
+      .admin-sidebar.open {
+        transform: translateX(0);
+      }
+
+      .admin-main {
+        margin-left: 0;
+      }
+
+      .btn-toggle-sidebar {
+        display: block;
+      }
+
+      .sidebar-overlay.open {
+        display: block;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .admin-content {
+        padding: 15px;
+      }
+
+      .dashboard-card .card-value {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Login do Admin -->
+  <div id="adminLogin" class="admin-login-container">
+    <div class="admin-login-card">
+      <div class="text-center mb-4">
+        <div class="empresa-icon mx-auto mb-3" style="width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,#553A73,#7d5a9e);display:flex;align-items:center;justify-content:center;color:white;font-size:1.8rem;">
+          <i class="bi bi-shield-lock"></i>
+        </div>
+        <h3>Painel Admin</h3>
+        <p>Acesso restrito a administradores</p>
+      </div>
+
+      <form id="formLoginAdmin">
+        <div class="mb-3">
+          <label for="adminEmail" class="form-label fw-bold" style="color: var(--cor-primaria);">E-mail</label>
+          <input type="email" class="form-control" id="adminEmail" placeholder="admin@ondetem.com" required
+            style="border:2px solid #e0e0e0;border-radius:10px;padding:12px 15px;">
+        </div>
+
+        <div class="mb-3">
+          <label for="adminSenha" class="form-label fw-bold" style="color: var(--cor-primaria);">Senha</label>
+          <input type="password" class="form-control" id="adminSenha" placeholder="Sua senha de administrador" required
+            style="border:2px solid #e0e0e0;border-radius:10px;padding:12px 15px;">
+        </div>
+
+        <div id="loginErro" class="text-danger small mb-3 d-none"></div>
+
+        <button type="submit" class="btn w-100" id="btnLoginAdmin"
+          style="background:linear-gradient(135deg,#553A73,#7d5a9e);color:white;border:none;padding:14px;border-radius:25px;font-weight:600;font-size:1.05rem;">
+          <i class="bi bi-box-arrow-in-right"></i> Entrar
+        </button>
+      </form>
+
+      <div class="text-center mt-3">
+        <a href="index.html" style="color: var(--cor-primaria); font-size: 0.9rem;">
+          <i class="bi bi-arrow-left"></i> Voltar ao site
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Painel Admin (oculto até login) -->
+  <div id="adminPanel" class="d-none">
+    <!-- Overlay Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="admin-sidebar" id="adminSidebar">
+      <div class="sidebar-header">
+        <h4><i class="bi bi-b-circle-fill text-danger me-2"></i> Onde Tem?</h4>
+        <small>Painel Administrativo</small>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#" class="active" data-section="dashboard">
+          <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+        <a href="#" data-section="usuarios">
+          <i class="bi bi-people"></i> Usuários
+        </a>
+        <a href="#" data-section="empresas">
+          <i class="bi bi-building"></i> Empresas
+        </a>
+        <a href="#" data-section="agendamentos">
+          <i class="bi bi-calendar-check"></i> Agendamentos
+        </a>
+
+        <div class="sidebar-divider"></div>
+
+        <a href="#" data-section="configuracoes">
+          <i class="bi bi-gear"></i> Configurações
+        </a>
+        <a href="#" id="btnLogoutAdmin">
+          <i class="bi bi-box-arrow-left"></i> Sair
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="admin-main">
+      <!-- Topbar -->
+      <div class="admin-topbar">
+        <div class="d-flex align-items-center gap-3">
+          <button class="btn-toggle-sidebar" id="btnToggleSidebar">
+            <i class="bi bi-list"></i>
+          </button>
+          <h5 id="topbarTitle">Dashboard</h5>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+          <span class="text-muted small" id="adminEmailDisplay"></span>
+          <div class="user-avatar-sm">A</div>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="admin-content">
+
+        <!-- DASHBOARD -->
+        <div class="admin-section active" id="section-dashboard">
+          <div class="row g-4 mb-4">
+            <div class="col-lg-3 col-md-6">
+              <div class="dashboard-card">
+                <div class="card-icon bg-purple"><i class="bi bi-people"></i></div>
+                <div class="card-value" id="totalUsuarios">0</div>
+                <div class="card-label">Usuários Cadastrados</div>
+              </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+              <div class="dashboard-card">
+                <div class="card-icon bg-green"><i class="bi bi-building"></i></div>
+                <div class="card-value" id="totalEmpresas">0</div>
+                <div class="card-label">Empresas Ativas</div>
+              </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+              <div class="dashboard-card">
+                <div class="card-icon bg-blue"><i class="bi bi-calendar-check"></i></div>
+                <div class="card-value" id="totalAgendamentos">0</div>
+                <div class="card-label">Agendamentos</div>
+              </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+              <div class="dashboard-card">
+                <div class="card-icon bg-orange"><i class="bi bi-graph-up-arrow"></i></div>
+                <div class="card-value" id="totalReceita">R$ 0</div>
+                <div class="card-label">Receita Estimada</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabela de atividades recentes -->
+          <div class="admin-table">
+            <div class="table-header">
+              <h5><i class="bi bi-clock-history"></i> Atividades Recentes</h5>
+            </div>
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Tipo</th>
+                    <th>Descrição</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="atividadesRecentes">
+                  <tr>
+                    <td colspan="4" class="text-center text-muted py-4">
+                      <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                      Nenhuma atividade recente
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- USUÁRIOS -->
+        <div class="admin-section" id="section-usuarios">
+          <div class="admin-table">
+            <div class="table-header">
+              <h5><i class="bi bi-people"></i> Usuários Cadastrados</h5>
+              <div class="d-flex gap-2">
+                <input type="search" class="form-control form-control-sm" placeholder="Buscar usuário..." id="buscaUsuario" style="width: 200px; border-radius: 20px;">
+                <button class="btn btn-sm btn-outline-primary rounded-pill" id="btnExportarUsuarios">
+                  <i class="bi bi-download"></i> Exportar
+                </button>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>E-mail</th>
+                    <th>Telefone</th>
+                    <th>Data Cadastro</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="tabelaUsuarios">
+                  <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                      <i class="bi bi-people fs-3 d-block mb-2"></i>
+                      Nenhum usuário cadastrado
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- EMPRESAS -->
+        <div class="admin-section" id="section-empresas">
+          <div class="admin-table">
+            <div class="table-header">
+              <h5><i class="bi bi-building"></i> Empresas Cadastradas</h5>
+              <div class="d-flex gap-2">
+                <input type="search" class="form-control form-control-sm" placeholder="Buscar empresa..." id="buscaEmpresa" style="width: 200px; border-radius: 20px;">
+                <button class="btn btn-sm btn-outline-primary rounded-pill" id="btnExportarEmpresas">
+                  <i class="bi bi-download"></i> Exportar
+                </button>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>CNPJ</th>
+                    <th>Categorias</th>
+                    <th>Cidade</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="tabelaEmpresas">
+                  <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                      <i class="bi bi-building fs-3 d-block mb-2"></i>
+                      Nenhuma empresa cadastrada
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- AGENDAMENTOS -->
+        <div class="admin-section" id="section-agendamentos">
+          <div class="admin-table">
+            <div class="table-header">
+              <h5><i class="bi bi-calendar-check"></i> Todos os Agendamentos</h5>
+              <div class="d-flex gap-2">
+                <select class="form-select form-select-sm" id="filtroStatusAgendamento" style="width: 150px; border-radius: 20px;">
+                  <option value="">Todos</option>
+                  <option value="confirmado">Confirmados</option>
+                  <option value="pendente">Pendentes</option>
+                  <option value="cancelado">Cancelados</option>
+                </select>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Estabelecimento</th>
+                    <th>Data</th>
+                    <th>Horário</th>
+                    <th>Pagamento</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="tabelaAgendamentos">
+                  <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                      <i class="bi bi-calendar-x fs-3 d-block mb-2"></i>
+                      Nenhum agendamento encontrado
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONFIGURAÇÕES -->
+        <div class="admin-section" id="section-configuracoes">
+          <div class="row g-4">
+            <div class="col-lg-6">
+              <div class="dashboard-card">
+                <h5 class="fw-bold mb-3" style="color: var(--cor-primaria);">
+                  <i class="bi bi-palette"></i> Configurações Gerais
+                </h5>
+                <div class="mb-3">
+                  <label class="form-label fw-bold">Nome da Plataforma</label>
+                  <input type="text" class="form-control" value="Onde Tem?" id="configNomePlataforma"
+                    style="border:2px solid #e0e0e0;border-radius:10px;padding:12px 15px;">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label fw-bold">E-mail de Suporte</label>
+                  <input type="email" class="form-control" value="suporte@ondetem.com" id="configEmailSuporte"
+                    style="border:2px solid #e0e0e0;border-radius:10px;padding:12px 15px;">
+                </div>
+                <button class="btn btn-sm rounded-pill" style="background:var(--cor-primaria);color:white;" id="btnSalvarConfig">
+                  <i class="bi bi-check-circle"></i> Salvar Configurações
+                </button>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <div class="dashboard-card">
+                <h5 class="fw-bold mb-3" style="color: var(--cor-primaria);">
+                  <i class="bi bi-database"></i> Dados do Sistema
+                </h5>
+                <div class="mb-2 d-flex justify-content-between">
+                  <span class="text-muted">Versão do Sistema</span>
+                  <span class="fw-bold">1.0.0</span>
+                </div>
+                <div class="mb-2 d-flex justify-content-between">
+                  <span class="text-muted">Último Acesso Admin</span>
+                  <span class="fw-bold" id="ultimoAcessoAdmin">-</span>
+                </div>
+                <div class="mb-2 d-flex justify-content-between">
+                  <span class="text-muted">Itens no LocalStorage</span>
+                  <span class="fw-bold" id="totalLocalStorage">0</span>
+                </div>
+                <hr>
+                <button class="btn btn-sm btn-outline-danger rounded-pill" id="btnLimparDados">
+                  <i class="bi bi-trash"></i> Limpar Todos os Dados
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="config.js"></script>
+  <script src="utils.js"></script>
+  <script>
+    // Credenciais do admin (em produção seriam validadas no backend)
+    const ADMIN_CREDENTIALS = {
+      email: 'admin@ondetem.com',
+      senha: '123456'
+    };
+
+    const STORAGE_KEYS_ADMIN = {
+      usuarios: 'ondetem_usuarios',
+      empresas: 'ondetem_empresas',
+      agendamentos: 'ondetem_agendamentos',
+      adminLogado: 'ondetem_admin_logado',
+      ultimoAcesso: 'ondetem_admin_ultimo_acesso'
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      verificarLoginAdmin();
+      inicializarLoginAdmin();
+      inicializarSidebar();
+      inicializarNavegacao();
+      inicializarLogout();
+      inicializarConfiguracoes();
+    });
+
+    // Verificar se já está logado
+    function verificarLoginAdmin() {
+      const logado = sessionStorage.getItem(STORAGE_KEYS_ADMIN.adminLogado);
+      if (logado) {
+        mostrarPainel(logado);
+      }
+    }
+
+    // Login do admin
+    function inicializarLoginAdmin() {
+      document.getElementById('formLoginAdmin').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const email = document.getElementById('adminEmail').value;
+        const senha = document.getElementById('adminSenha').value;
+        const loginErro = document.getElementById('loginErro');
+        const btnLogin = document.getElementById('btnLoginAdmin');
+
+        btnLogin.disabled = true;
+        btnLogin.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verificando...';
+
+        // Simular delay de autenticação
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        try {
+          const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, senha })
+          });
+
+          const resultado = await response.json();
+
+          if (response.ok) {
+            sessionStorage.setItem(STORAGE_KEYS_ADMIN.adminLogado, email);
+            localStorage.setItem(STORAGE_KEYS_ADMIN.ultimoAcesso, new Date().toLocaleString('pt-BR'));
+            mostrarPainel(email);
+          } else {
+            loginErro.textContent = resultado.erro || 'E-mail ou senha incorretos.';
+            loginErro.classList.remove('d-none');
+          }
+        } catch (erro) {
+          loginErro.textContent = 'Erro de conexão. Tente novamente.';
+          loginErro.classList.remove('d-none');
+        } finally {
+          btnLogin.disabled = false;
+          btnLogin.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Entrar';
+        }
+      });
+    }
+
+    function mostrarPainel(email) {
+      document.getElementById('adminLogin').classList.add('d-none');
+      document.getElementById('adminPanel').classList.remove('d-none');
+      document.getElementById('adminEmailDisplay').textContent = email;
+      carregarDashboard();
+    }
+
+    // Sidebar e navegação
+    function inicializarSidebar() {
+      const sidebar = document.getElementById('adminSidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      const btnToggle = document.getElementById('btnToggleSidebar');
+
+      btnToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('open');
+      });
+
+      overlay.addEventListener('click', () => {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('open');
+      });
+    }
+
+    function inicializarNavegacao() {
+      const links = document.querySelectorAll('.sidebar-nav a[data-section]');
+
+      links.forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const section = link.dataset.section;
+
+          // Atualizar links ativos
+          links.forEach(l => l.classList.remove('active'));
+          link.classList.add('active');
+
+          // Mostrar seção
+          document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+          document.getElementById(`section-${section}`).classList.add('active');
+
+          // Atualizar título
+          const titulos = {
+            dashboard: 'Dashboard',
+            usuarios: 'Usuários',
+            empresas: 'Empresas',
+            agendamentos: 'Agendamentos',
+            configuracoes: 'Configurações'
+          };
+          document.getElementById('topbarTitle').textContent = titulos[section] || 'Dashboard';
+
+          // Carregar dados da seção
+          if (section === 'dashboard') carregarDashboard();
+          if (section === 'usuarios') carregarUsuarios();
+          if (section === 'empresas') carregarEmpresas();
+          if (section === 'agendamentos') carregarAgendamentosAdmin();
+
+          // Fechar sidebar mobile
+          document.getElementById('adminSidebar').classList.remove('open');
+          document.getElementById('sidebarOverlay').classList.remove('open');
+        });
+      });
+    }
+
+    function inicializarLogout() {
+      document.getElementById('btnLogoutAdmin').addEventListener('click', (e) => {
+        e.preventDefault();
+        if (confirm('Deseja sair do painel administrativo?')) {
+          sessionStorage.removeItem(STORAGE_KEYS_ADMIN.adminLogado);
+          document.getElementById('adminPanel').classList.add('d-none');
+          document.getElementById('adminLogin').classList.remove('d-none');
+          document.getElementById('formLoginAdmin').reset();
+          document.getElementById('loginErro').classList.add('d-none');
+        }
+      });
+    }
+
+    // Dashboard
+    function carregarDashboard() {
+      const usuarios = JSON.parse(localStorage.getItem(STORAGE_KEYS_ADMIN.usuarios)) || [];
+      const empresas = JSON.parse(localStorage.getItem(STORAGE_KEYS_ADMIN.empresas)) || [];
+      const agendamentos = JSON.parse(localStorage.getItem(STORAGE_KEYS_ADMIN.agendamentos)) || [];
+
+      document.getElementById('totalUsuarios').textContent = usuarios.length;
+      document.getElementById('totalEmpresas').textContent = empresas.length;
+      document.getElementById('totalAgendamentos').textContent = agendamentos.length;
+
+      // Calcular receita estimada
+      let receita = 0;
+      agendamentos.forEach(a => {
+        if (a.status === 'confirmado') {
+          receita += 100; // Valor médio estimado
+        }
+      });
+      document.getElementById('totalReceita').textContent = formatarMoeda(receita);
+
+      // Atividades recentes
+      carregarAtividadesRecentes(usuarios, empresas, agendamentos);
+    }
+
+    function carregarAtividadesRecentes(usuarios, empresas, agendamentos) {
+      const tbody = document.getElementById('atividadesRecentes');
+      const atividades = [];
+
+      usuarios.forEach(u => {
+        atividades.push({
+          data: u.dataCadastro || new Date().toLocaleDateString('pt-BR'),
+          tipo: 'Usuário',
+          descricao: `Novo usuário: ${u.nome}`,
+          status: 'ativo'
+        });
+      });
+
+      empresas.forEach(e => {
+        atividades.push({
+          data: e.dataCadastro || new Date().toLocaleDateString('pt-BR'),
+          tipo: 'Empresa',
+          descricao: `Nova empresa: ${e.nome}`,
+          status: e.status || 'pendente'
+        });
+      });
+
+      agendamentos.forEach(a => {
+        atividades.push({
+          data: a.timestamp || new Date().toLocaleDateString('pt-BR'),
+          tipo: 'Agendamento',
+          descricao: `Agendamento em ${a.estabelecimento}`,
+          status: a.status || 'confirmado'
+        });
+      });
+
+      if (atividades.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" class="text-center text-muted py-4">
+              <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+              Nenhuma atividade recente
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      // Mostrar últimas 10 atividades
+      const recentes = atividades.slice(-10).reverse();
+      tbody.innerHTML = recentes.map(a => `
+        <tr>
+          <td class="small">${a.data}</td>
+          <td><span class="badge bg-secondary">${a.tipo}</span></td>
+          <td>${a.descricao}</td>
+          <td><span class="badge-admin badge-${a.status}">${a.status}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    // Usuários
+    function carregarUsuarios() {
+      const usuarios = JSON.parse(localStorage.getItem(STORAGE_KEYS_ADMIN.usuarios)) || [];
+      const tbody = document.getElementById('tabelaUsuarios');
+
+      if (usuarios.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">
+              <i class="bi bi-people fs-3 d-block mb-2"></i>
+              Nenhum usuário cadastrado
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = usuarios.map((u, index) => `
+        <tr>
+          <td class="fw-bold">${u.nome}</td>
+          <td>${u.email}</td>
+          <td>${u.telefone || '-'}</td>
+          <td class="small">${u.dataCadastro || '-'}</td>
+          <td><span class="badge-admin badge-${u.status || 'ativo'}">${u.status || 'ativo'}</span></td>
+          <td>
+            <button class="btn btn-sm btn-outline-danger" onclick="removerUsuarioAdmin(${index})">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function removerUsuarioAdmin(index) {
+      if (!confirm('Tem certeza que deseja remover este usuário?')) return;
+      const usuarios = JSON.parse(localStorage.getItem(STORAGE_KEYS_ADMIN.usuarios)) || [];
+      usuarios.splice(index, 1);
+      localStorage.setItem(STORAGE_KEYS_ADMIN.usuarios, JSON.stringify(usuarios));
+      carregarUsuarios();
+      carregarDashboard();
+    }
+
+    // Empresas
+    function carregarEmpresas() {
+      const empresas = JSON.parse(localStorage.getItem(STORAGE_KEYS_ADMIN.empresas)) || [];
+      const tbody = document.getElementById('tabelaEmpresas');
+
+      if (empresas.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">
+              <i class="bi bi-building fs-3 d-block mb-2"></i>
+              Nenhuma empresa cadastrada
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = empresas.map((e, index) => `
+        <tr>
+          <td class="fw-bold">${e.nome}</td>
+          <td>${e.cnpj || '-'}</td>
+          <td>${(e.categorias || []).join(', ')}</td>
+          <td>${e.endereco ? e.endereco.cidade : '-'}</td>
+          <td>
+            <span class="badge-admin badge-${e.status || 'pendente'}">${e.status || 'pendente'}</span>
+          </td>
+          <td>
+            <div class="d-flex gap-1">
+              <button class="btn btn-sm btn-outline-success" onclick="aprovarEmpresa(${index})" title="Aprovar">
+                <i class="bi bi-check-circle"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger" onclick="removerEmpresaAdmin(${index})" title="Remover">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function aprovarEmpresa(index) {
+      const empresas = JSON.parse(localStorage.getItem(STORAGE_KEYS_ADMIN.empresas)) || [];
+      empresas[index].status = 'ativo';
+      localStorage.setItem(STORAGE_KEYS_ADMIN.empresas, JSON.stringify(empresas));
+      carregarEmpresas();
+      carregarDashboard();
+    }
+
+    function removerEmpresaAdmin(index) {
+      if (!confirm('Tem certeza que deseja remover esta empresa?')) return;
+      const empresas = JSON.parse(localStorage.getItem(STORAGE_KEYS_ADMIN.empresas)) || [];
+      empresas.splice(index, 1);
+      localStorage.setItem(STORAGE_KEYS_ADMIN.empresas, JSON.stringify(empresas));
+      carregarEmpresas();
+      carregarDashboard();
+    }
+
+    // Agendamentos
+    function carregarAgendamentosAdmin() {
+      const agendamentos = JSON.parse(localStorage.getItem(STORAGE_KEYS_ADMIN.agendamentos)) || [];
+      const tbody = document.getElementById('tabelaAgendamentos');
+
+      if (agendamentos.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">
+              <i class="bi bi-calendar-x fs-3 d-block mb-2"></i>
+              Nenhum agendamento encontrado
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = agendamentos.map((a, index) => {
+        const statusColor = {
+          'confirmado': 'ativo',
+          'pendente': 'pendente',
+          'cancelado': 'inativo'
+        }[a.status] || 'pendente';
+
+        return `
+          <tr>
+            <td class="fw-bold">${a.estabelecimento}</td>
+            <td>${formatarData(a.data)}</td>
+            <td>${a.hora}</td>
+            <td>${obterLabelPagamento(a.pagamento)}</td>
+            <td><span class="badge-admin badge-${statusColor}">${a.status || 'confirmado'}</span></td>
+            <td>
+              <button class="btn btn-sm btn-outline-danger" onclick="removerAgendamentoAdmin(${index})">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function removerAgendamentoAdmin(index) {
+      if (!confirm('Tem certeza que deseja remover este agendamento?')) return;
+      const agendamentos = JSON.parse(localStorage.getItem(STORAGE_KEYS_ADMIN.agendamentos)) || [];
+      agendamentos.splice(index, 1);
+      localStorage.setItem(STORAGE_KEYS_ADMIN.agendamentos, JSON.stringify(agendamentos));
+      carregarAgendamentosAdmin();
+      carregarDashboard();
+    }
+
+    // Configurações
+    function inicializarConfiguracoes() {
+      document.getElementById('btnSalvarConfig').addEventListener('click', () => {
+        const nome = document.getElementById('configNomePlataforma').value;
+        const email = document.getElementById('configEmailSuporte').value;
+        localStorage.setItem('ondetem_config', JSON.stringify({ nome, email }));
+        alert('Configurações salvas com sucesso!');
+      });
+
+      document.getElementById('btnLimparDados').addEventListener('click', () => {
+        if (confirm('ATENÇÃO: Isso apagará todos os dados do sistema. Deseja continuar?')) {
+          localStorage.removeItem(STORAGE_KEYS_ADMIN.usuarios);
+          localStorage.removeItem(STORAGE_KEYS_ADMIN.empresas);
+          localStorage.removeItem(STORAGE_KEYS_ADMIN.agendamentos);
+          carregarDashboard();
+          alert('Todos os dados foram removidos.');
+        }
+      });
+
+      // Carregar info do sistema
+      const ultimoAcesso = localStorage.getItem(STORAGE_KEYS_ADMIN.ultimoAcesso) || '-';
+      document.getElementById('ultimoAcessoAdmin').textContent = ultimoAcesso;
+      document.getElementById('totalLocalStorage').textContent = localStorage.length;
+    }
+
+    // Filtro de agendamentos
+    document.getElementById('filtroStatusAgendamento').addEventListener('change', (e) => {
+      const status = e.target.value;
+      const agendamentos = JSON.parse(localStorage.getItem(STORAGE_KEYS_ADMIN.agendamentos)) || [];
+      const filtrados = status ? agendamentos.filter(a => a.status === status) : agendamentos;
+      const tbody = document.getElementById('tabelaAgendamentos');
+
+      if (filtrados.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">
+              <i class="bi bi-calendar-x fs-3 d-block mb-2"></i>
+              Nenhum agendamento encontrado
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filtrados.map((a, index) => {
+        const statusColor = {
+          'confirmado': 'ativo',
+          'pendente': 'pendente',
+          'cancelado': 'inativo'
+        }[a.status] || 'pendente';
+
+        return `
+          <tr>
+            <td class="fw-bold">${a.estabelecimento}</td>
+            <td>${formatarData(a.data)}</td>
+            <td>${a.hora}</td>
+            <td>${obterLabelPagamento(a.pagamento)}</td>
+            <td><span class="badge-admin badge-${statusColor}">${a.status || 'confirmado'}</span></td>
+            <td>
+              <button class="btn btn-sm btn-outline-danger" onclick="removerAgendamentoAdmin(${index})">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    });
+
+    // Busca de usuários
+    document.getElementById('buscaUsuario').addEventListener('input', (e) => {
+      const termo = e.target.value.toLowerCase();
+      const usuarios = JSON.parse(localStorage.getItem(STORAGE_KEYS_ADMIN.usuarios)) || [];
+      const filtrados = usuarios.filter(u =>
+        u.nome.toLowerCase().includes(termo) ||
+        u.email.toLowerCase().includes(termo)
+      );
+
+      const tbody = document.getElementById('tabelaUsuarios');
+      if (filtrados.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">Nenhum usuário encontrado</td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filtrados.map((u, index) => `
+        <tr>
+          <td class="fw-bold">${u.nome}</td>
+          <td>${u.email}</td>
+          <td>${u.telefone || '-'}</td>
+          <td class="small">${u.dataCadastro || '-'}</td>
+          <td><span class="badge-admin badge-${u.status || 'ativo'}">${u.status || 'ativo'}</span></td>
+          <td>
+            <button class="btn btn-sm btn-outline-danger" onclick="removerUsuarioAdmin(${index})">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    });
+
+    // Busca de empresas
+    document.getElementById('buscaEmpresa').addEventListener('input', (e) => {
+      const termo = e.target.value.toLowerCase();
+      const empresas = JSON.parse(localStorage.getItem(STORAGE_KEYS_ADMIN.empresas)) || [];
+      const filtrados = empresas.filter(emp =>
+        emp.nome.toLowerCase().includes(termo) ||
+        (emp.cnpj || '').includes(termo)
+      );
+
+      const tbody = document.getElementById('tabelaEmpresas');
+      if (filtrados.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">Nenhuma empresa encontrada</td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filtrados.map((e, index) => `
+        <tr>
+          <td class="fw-bold">${e.nome}</td>
+          <td>${e.cnpj || '-'}</td>
+          <td>${(e.categorias || []).join(', ')}</td>
+          <td>${e.endereco ? e.endereco.cidade : '-'}</td>
+          <td><span class="badge-admin badge-${e.status || 'pendente'}">${e.status || 'pendente'}</span></td>
+          <td>
+            <div class="d-flex gap-1">
+              <button class="btn btn-sm btn-outline-success" onclick="aprovarEmpresa(${index})" title="Aprovar">
+                <i class="bi bi-check-circle"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger" onclick="removerEmpresaAdmin(${index})" title="Remover">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    });
+  </script>
+</body>
+</html>

@@ -32,6 +32,18 @@ app.get('/usuarios', (req, res) => {
     res.sendFile(path.join(__dirname, 'usuarios.html'));
 });
 
+app.get('/cadastro-usuario', (req, res) => {
+    res.sendFile(path.join(__dirname, 'cadastro-usuario.html'));
+});
+
+app.get('/cadastro-empresa', (req, res) => {
+    res.sendFile(path.join(__dirname, 'cadastro-empresa.html'));
+});
+
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin.html'));
+});
+
 // ==========================================
 // 2. ROTAS DE DADOS (API RESTful)
 // ==========================================
@@ -95,7 +107,25 @@ app.post('/api/usuarios', (req, res) => {
 
     res.status(201).json({
         mensagem: "Usuário registrado com sucesso!",
-        dados: { id: Date.now(), nome, email }
+        dados: { id: Date.now(), nome, email, dataCadastro: new Date().toLocaleString('pt-BR'), status: 'ativo' }
+    });
+});
+
+// --- ROTAS DE EMPRESAS ---
+app.get('/api/empresas', (req, res) => {
+    res.json({ status: 'sucesso', empresas: [] });
+});
+
+app.post('/api/empresas', (req, res) => {
+    const { nome, cnpj, razaoSocial, email, senha } = req.body;
+
+    if (!nome || !cnpj || !razaoSocial || !email || !senha) {
+        return res.status(400).json({ erro: "Preencha todos os campos obrigatórios." });
+    }
+
+    res.status(201).json({
+        mensagem: "Empresa cadastrada com sucesso! Aguardando aprovação do administrador.",
+        dados: { id: Date.now(), nome, cnpj, email, dataCadastro: new Date().toLocaleString('pt-BR'), status: 'pendente' }
     });
 });
 
