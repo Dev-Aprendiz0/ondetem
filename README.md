@@ -1,4 +1,4 @@
-Aqui está a tradução do seu plano de testes. Mantive a formatação original em Markdown e adaptei alguns termos para o jargão técnico comum em português brasileiro:
+
 
 # Plano de Testes: Páginas de Cadastro + Admin
 
