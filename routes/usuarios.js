@@ -1,7 +1,7 @@
 // routes/usuarios.js — CRUD routes for regular users
 const express = require('express');
 const router = express.Router();
-const { usuarios, sanitize, emailRegex, gerarToken, proximoId } = require('../store/db');
+const { usuarios, sanitize, emailRegex, proximoId } = require('../store/db');
 const { verificarToken, autorizarRoles } = require('../middleware/auth');
 
 // ==========================================
@@ -49,36 +49,8 @@ router.post('/registro', (req, res) => {
     });
 });
 
-// ==========================================
-// PUBLIC — Login de usuário
-// ==========================================
-
-// POST /api/usuarios/login
-router.post('/login', (req, res) => {
-    const { email, senha } = req.body;
-
-    if (!email || !senha) {
-        return res.status(400).json({ erro: "E-mail e senha são obrigatórios." });
-    }
-
-    const usuario = usuarios.find(u => u.email === email && u.senha === senha);
-    if (!usuario) {
-        return res.status(401).json({ erro: "Credenciais inválidas." });
-    }
-
-    if (!usuario.ativo) {
-        return res.status(403).json({ erro: "Conta desativada. Entre em contato com o suporte." });
-    }
-
-    const token = gerarToken(usuario.id, usuario.role, usuario.email);
-    const { senha: _, ...dadosPublicos } = usuario;
-
-    res.status(200).json({
-        mensagem: "Login realizado com sucesso!",
-        token,
-        usuario: dadosPublicos
-    });
-});
+// NOTE: Login is handled by the unified POST /api/login in server.js
+// (with proper rate limiting). Do NOT add a duplicate login route here.
 
 // ==========================================
 // PROTECTED — Perfil do próprio usuário

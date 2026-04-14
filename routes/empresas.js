@@ -57,7 +57,7 @@ router.post('/registro', (req, res) => {
 
     // Also add to usuarios store so login works
     usuarios.push({
-        id: novaEmpresa.id + 10000, // offset to avoid collisions
+        id: proximoId(usuarios),
         nome: novaEmpresa.nome,
         email: novaEmpresa.email,
         senha: novaEmpresa.senha,
