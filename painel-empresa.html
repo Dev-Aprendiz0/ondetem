@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel da Empresa - Onde Tem?</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#553A73">
+<style>
+  body { background:#f0f2f5; min-height:100vh; font-family:'Segoe UI',sans-serif; }
+  .empresa-sidebar {
+    position:fixed; top:0; left:0; width:260px; height:100vh;
+    background:linear-gradient(180deg,#553A73 0%,#3d2854 100%);
+    color:#fff; z-index:1000; overflow-y:auto; transition:transform .3s ease;
+  }
+  .sidebar-header { padding:25px 20px; border-bottom:1px solid rgba(255,255,255,.1); text-align:center; }
+  .sidebar-header h4 { margin:0; font-weight:700; font-size:1.2rem; }
+  .sidebar-header small { opacity:.7; font-size:.8rem; }
+  .sidebar-nav { padding:15px 0; }
+  .sidebar-nav .nav-link {
+    color:rgba(255,255,255,.85); padding:12px 22px; display:flex; align-items:center;
+    gap:12px; border-left:3px solid transparent; cursor:pointer;
+  }
+  .sidebar-nav .nav-link:hover { background:rgba(255,255,255,.08); color:#fff; }
+  .sidebar-nav .nav-link.active { background:rgba(255,255,255,.12); border-left-color:#fff; color:#fff; }
+  .sidebar-nav .nav-link i { font-size:1.1rem; }
+  .sidebar-footer { position:absolute; bottom:0; left:0; right:0; padding:18px; border-top:1px solid rgba(255,255,255,.1); }
+
+  .main-content { margin-left:260px; padding:30px; }
+  .topbar { background:#fff; border-radius:12px; padding:18px 25px; margin-bottom:25px;
+    box-shadow:0 2px 10px rgba(0,0,0,.05); display:flex; justify-content:space-between; align-items:center; }
+  .topbar h2 { margin:0; color:#553A73; font-weight:700; font-size:1.4rem; }
+  .stat-card { background:#fff; border-radius:14px; padding:22px; box-shadow:0 4px 15px rgba(0,0,0,.06);
+    border-left:4px solid #553A73; transition:transform .2s; }
+  .stat-card:hover { transform:translateY(-3px); }
+  .stat-card h3 { font-size:2rem; font-weight:700; color:#553A73; margin:0; }
+  .stat-card p { margin:0; color:#666; font-size:.9rem; }
+  .stat-card.warn { border-left-color:#ffa726; } .stat-card.warn h3 { color:#ffa726; }
+  .stat-card.ok { border-left-color:#26a69a; } .stat-card.ok h3 { color:#26a69a; }
+  .stat-card.danger { border-left-color:#ef5350; } .stat-card.danger h3 { color:#ef5350; }
+
+  .panel { background:#fff; border-radius:14px; padding:25px; box-shadow:0 2px 10px rgba(0,0,0,.05); margin-bottom:25px; }
+  .panel h3 { color:#553A73; font-weight:700; margin-bottom:18px; font-size:1.15rem; }
+  .badge-status { padding:4px 10px; border-radius:20px; font-size:.75rem; font-weight:600; text-transform:uppercase; }
+  .badge-pendente { background:#fff3e0; color:#e65100; }
+  .badge-confirmado { background:#e3f2fd; color:#1565c0; }
+  .badge-concluido { background:#e8f5e9; color:#2e7d32; }
+  .badge-recusado { background:#ffebee; color:#c62828; }
+
+  .section { display:none; } .section.active { display:block; }
+
+  .btn-primary-custom { background:#553A73; border:none; color:#fff; padding:10px 20px; border-radius:8px; font-weight:600; }
+  .btn-primary-custom:hover { background:#3d2854; color:#fff; }
+
+  @media (max-width: 991px) {
+    .empresa-sidebar { transform:translateX(-100%); }
+    .empresa-sidebar.show { transform:translateX(0); }
+    .main-content { margin-left:0; padding:20px 15px; }
+    .mobile-toggle { display:inline-block !important; }
+  }
+  .mobile-toggle { display:none; background:#553A73; color:#fff; border:none; padding:8px 12px; border-radius:8px; }
+</style>
+</head>
+<body>
+
+<aside class="empresa-sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <h4><i class="bi bi-building"></i> Onde Tem?</h4>
+    <small>Painel da Empresa</small>
+  </div>
+  <nav class="sidebar-nav">
+    <a class="nav-link active" data-section="dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a class="nav-link" data-section="agendamentos"><i class="bi bi-calendar-check"></i> Agendamentos</a>
+    <a class="nav-link" data-section="servicos"><i class="bi bi-bag"></i> Produtos / Serviços</a>
+    <a class="nav-link" data-section="perfil"><i class="bi bi-person-badge"></i> Perfil da Empresa</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="btn btn-outline-light w-100" onclick="OndeTemAuth.logout()">
+      <i class="bi bi-box-arrow-right"></i> Sair
+    </button>
+  </div>
+</aside>
+
+<main class="main-content">
+  <div class="topbar">
+    <div class="d-flex align-items-center gap-3">
+      <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('show')">
+        <i class="bi bi-list"></i>
+      </button>
+      <h2 id="pageTitle">Dashboard</h2>
+    </div>
+    <div class="text-end">
+      <small class="text-muted d-block">Bem-vindo(a)</small>
+      <strong id="empresaNome" style="color:#553A73">—</strong>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <section class="section active" id="section-dashboard">
+    <div class="row g-3 mb-4">
+      <div class="col-md-3 col-6"><div class="stat-card"><h3 id="stTotal">0</h3><p>Total de agendamentos</p></div></div>
+      <div class="col-md-3 col-6"><div class="stat-card warn"><h3 id="stPend">0</h3><p>Pendentes</p></div></div>
+      <div class="col-md-3 col-6"><div class="stat-card ok"><h3 id="stConf">0</h3><p>Confirmados</p></div></div>
+      <div class="col-md-3 col-6"><div class="stat-card"><h3 id="stServ">0</h3><p>Serviços cadastrados</p></div></div>
+    </div>
+    <div class="panel">
+      <h3><i class="bi bi-clock-history"></i> Agendamentos recentes</h3>
+      <div id="recentes"></div>
+    </div>
+  </section>
+
+  <!-- AGENDAMENTOS -->
+  <section class="section" id="section-agendamentos">
+    <div class="panel">
+      <h3><i class="bi bi-calendar-check"></i> Agendamentos recebidos</h3>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead><tr><th>Cliente</th><th>Data</th><th>Hora</th><th>Pagamento</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody id="tblAgendamentos"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVIÇOS -->
+  <section class="section" id="section-servicos">
+    <div class="panel">
+      <h3><i class="bi bi-bag-plus"></i> Adicionar serviço</h3>
+      <form id="formServico" class="row g-3">
+        <div class="col-md-5"><input class="form-control" name="nome" placeholder="Nome do serviço" required></div>
+        <div class="col-md-3"><input class="form-control" name="preco" type="number" step="0.01" placeholder="Preço (R$)" required></div>
+        <div class="col-md-2"><input class="form-control" name="duracao" type="number" placeholder="Duração (min)"></div>
+        <div class="col-md-2"><button class="btn btn-primary-custom w-100">Adicionar</button></div>
+      </form>
+    </div>
+    <div class="panel">
+      <h3><i class="bi bi-list-ul"></i> Serviços cadastrados</h3>
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead><tr><th>Nome</th><th>Preço</th><th>Duração</th><th>Ações</th></tr></thead>
+          <tbody id="tblServicos"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- PERFIL -->
+  <section class="section" id="section-perfil">
+    <div class="panel">
+      <h3><i class="bi bi-person-badge"></i> Perfil da Empresa</h3>
+      <form id="formPerfil" class="row g-3">
+        <div class="col-md-6"><label class="form-label">Nome fantasia</label><input class="form-control" name="nome"></div>
+        <div class="col-md-6"><label class="form-label">Razão social</label><input class="form-control" name="razaoSocial"></div>
+        <div class="col-md-6"><label class="form-label">Telefone</label><input class="form-control" name="telefone"></div>
+        <div class="col-md-6"><label class="form-label">Horário de funcionamento</label><input class="form-control" name="horario"></div>
+        <div class="col-12"><label class="form-label">Endereço</label><input class="form-control" name="endereco"></div>
+        <div class="col-12"><button class="btn btn-primary-custom"><i class="bi bi-save"></i> Salvar alterações</button></div>
+      </form>
+    </div>
+  </section>
+</main>
+
+<script src="auth-guard.js"></script>
+<script>
+if (!OndeTemAuth.exigirLogin(['empresa'])) throw new Error('redirecionando');
+
+const usuario = OndeTemAuth.obterUsuario();
+document.getElementById('empresaNome').textContent = usuario.nome;
+
+// Navegação entre seções
+document.querySelectorAll('.sidebar-nav .nav-link').forEach(link => {
+  link.addEventListener('click', () => {
+    document.querySelectorAll('.sidebar-nav .nav-link').forEach(l => l.classList.remove('active'));
+    link.classList.add('active');
+    const sec = link.dataset.section;
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById('section-' + sec).classList.add('active');
+    document.getElementById('pageTitle').textContent = link.textContent.trim();
+    document.getElementById('sidebar').classList.remove('show');
+    if (sec === 'dashboard') carregarDashboard();
+    if (sec === 'agendamentos') carregarAgendamentos();
+    if (sec === 'servicos') carregarServicos();
+    if (sec === 'perfil') carregarPerfil();
+  });
+});
+
+function badgeStatus(s) {
+  return `<span class="badge-status badge-${s}">${s}</span>`;
+}
+
+async function carregarDashboard() {
+  const r = await OndeTemAuth.api('/api/empresa/dashboard');
+  const d = await r.json();
+  stTotal.textContent = d.total; stPend.textContent = d.pendentes;
+  stConf.textContent = d.confirmados; stServ.textContent = d.servicos;
+  recentes.innerHTML = d.recentes.length
+    ? d.recentes.map(a => `<div class="d-flex justify-content-between border-bottom py-2">
+        <div><strong>${a.usuarioNome || a.usuarioEmail}</strong><br><small class="text-muted">${a.data} às ${a.hora}</small></div>
+        <div>${badgeStatus(a.status)}</div></div>`).join('')
+    : '<p class="text-muted">Nenhum agendamento ainda.</p>';
+}
+
+async function carregarAgendamentos() {
+  const r = await OndeTemAuth.api('/api/agendamentos');
+  const { dados } = await r.json();
+  tblAgendamentos.innerHTML = dados.length ? dados.map(a => `
+    <tr>
+      <td>${a.usuarioNome || a.usuarioEmail}</td>
+      <td>${a.data}</td><td>${a.hora}</td><td>${a.pagamento || '-'}</td>
+      <td>${badgeStatus(a.status)}</td>
+      <td>
+        ${a.status === 'pendente' ? `
+          <button class="btn btn-sm btn-success" onclick="atualizar(${a.id},'confirmado')"><i class="bi bi-check"></i></button>
+          <button class="btn btn-sm btn-danger" onclick="atualizar(${a.id},'recusado')"><i class="bi bi-x"></i></button>` : ''}
+        ${a.status === 'confirmado' ? `<button class="btn btn-sm btn-primary" onclick="atualizar(${a.id},'concluido')">Concluir</button>` : ''}
+      </td>
+    </tr>`).join('') : '<tr><td colspan="6" class="text-center text-muted py-4">Nenhum agendamento recebido.</td></tr>';
+}
+
+async function atualizar(id, status) {
+  await OndeTemAuth.api('/api/agendamentos/' + id, { method:'PATCH', body: JSON.stringify({ status }) });
+  carregarAgendamentos();
+}
+
+async function carregarServicos() {
+  const r = await OndeTemAuth.api('/api/empresa/servicos');
+  const { dados } = await r.json();
+  tblServicos.innerHTML = dados.length ? dados.map(s => `
+    <tr>
+      <td>${s.nome}</td><td>R$ ${Number(s.preco).toFixed(2)}</td><td>${s.duracao} min</td>
+      <td><button class="btn btn-sm btn-outline-danger" onclick="removerServico(${s.id})"><i class="bi bi-trash"></i></button></td>
+    </tr>`).join('') : '<tr><td colspan="4" class="text-center text-muted py-4">Nenhum serviço cadastrado.</td></tr>';
+}
+
+formServico.addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(formServico);
+  await OndeTemAuth.api('/api/empresa/servicos', { method:'POST', body: JSON.stringify(Object.fromEntries(fd)) });
+  formServico.reset();
+  carregarServicos();
+});
+
+async function removerServico(id) {
+  if (!confirm('Remover este serviço?')) return;
+  await OndeTemAuth.api('/api/empresa/servicos/' + id, { method:'DELETE' });
+  carregarServicos();
+}
+
+async function carregarPerfil() {
+  const r = await OndeTemAuth.api('/api/empresa/perfil');
+  const { dados } = await r.json();
+  Object.keys(dados).forEach(k => {
+    const inp = formPerfil.querySelector(`[name="${k}"]`);
+    if (inp) inp.value = dados[k] || '';
+  });
+}
+
+formPerfil.addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = Object.fromEntries(new FormData(formPerfil));
+  const r = await OndeTemAuth.api('/api/empresa/perfil', { method:'PUT', body: JSON.stringify(fd) });
+  if (r.ok) alert('Perfil atualizado com sucesso!');
+});
+
+carregarDashboard();
+</script>
+</body>
+</html>

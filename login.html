@@ -1,262 +1,99 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login - Onde Tem?</title>
-
 <link rel="stylesheet" href="stylesheet_login.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
-
 <style>
-
-/* ===== FUNDO CENTRALIZADO ===== */
-body{
-    background:#553a73;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
-    font-family:Poppins;
-}
-
-/* ===== CARD ===== */
-.container{
-    width:380px;
-    background:#6b5286;
-    border-radius:20px;
-    border:1px solid rgba(255,255,255,0.5);
-    display:flex;
-    justify-content:center;
-}
-
-.main{
-    width:100%;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:15px;
-    padding:35px 30px;
-    box-sizing:border-box;
-}
-
-/* LOGO */
-.logo img{
-    width:90px;
-}
-
-/* TITULO */
-.titulo-login{
-    color:white;
-    text-align:center;
-    font-weight:500;
-}
-
-/* ===== TABS ===== */
-.tipo-tabs{
-    display:flex;
-    gap:8px;
-}
-
-.tipo-tab{
-    padding:8px 16px;
-    border-radius:20px;
-    border:1px solid rgba(255,255,255,.5);
-    background:transparent;
-    color:rgba(255,255,255,.7);
-    cursor:pointer;
-    font-size:.85rem;
-    transition:.3s;
-}
-.tipo-tab:hover{background:rgba(255,255,255,.15);color:#fff;}
-.tipo-tab.active{background:#fff;color:#553a73;font-weight:600}
-
-/* ===== INPUTS ===== */
-.acess{
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-    width:100%;
-}
-
-input{
-    width:100%;
-    padding:12px;
-    border-radius:10px;
-    border:none;
-    outline:none;
-}
-
-/* ===== BOTÕES ===== */
-.button,.PF_PJ{
-    width:100%;
-    padding:12px;
-    border-radius:10px;
-    border:none;
-    font-weight:600;
-    cursor:pointer;
-    transition:.25s;
-}
-
-.button{
-    background:#fff;
-    color:#553a73;
-}
-.button:hover{
-    transform:translateY(-1px);
-    box-shadow:0 4px 10px rgba(0,0,0,.2);
-}
-
-.PF_PJ{
-    background:rgba(255,255,255,.15);
-    color:#fff;
-    border:1px solid rgba(255,255,255,.5);
-}
-.PF_PJ:hover{background:rgba(255,255,255,.25);}
-
-/* ERRO */
-.login-erro{
-    color:#ff6b6b;
-    font-size:.85rem;
-    text-align:center;
-    display:none;
-}
-.login-erro.show{display:block}
-
-/* CADASTRO */
-.cadastro-section{display:none}
-.cadastro-section.show{display:block}
-
-.cadastro-link{
-    width:100%;
-    text-align:center;
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-}
-
-/* VOLTAR */
-.voltar-link a{
-    color:rgba(255,255,255,.7);
-    font-size:.8rem;
-    text-decoration:none;
-}
-.voltar-link a:hover{color:#fff}
-
+  body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,#553A73,#7d5a9e);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .card-login{background:#fff;border-radius:18px;padding:35px;box-shadow:0 20px 60px rgba(0,0,0,.2);max-width:430px;width:100%}
+  h1{color:#553A73;font-weight:600;margin-bottom:6px;font-size:1.5rem}
+  p.sub{color:#888;margin-bottom:22px;font-size:.9rem}
+  .tipos{display:flex;gap:6px;background:#f3f3f7;padding:5px;border-radius:10px;margin-bottom:20px}
+  .tipo-tab{flex:1;padding:9px;border:none;background:transparent;border-radius:7px;font-weight:500;cursor:pointer;font-size:.85rem;color:#666}
+  .tipo-tab.active{background:#553A73;color:#fff}
+  input{width:100%;padding:12px 14px;border:1px solid #ddd;border-radius:8px;margin-bottom:12px;font-size:.95rem}
+  input:focus{outline:none;border-color:#553A73}
+  .btn-login{width:100%;background:#553A73;color:#fff;border:none;padding:13px;border-radius:8px;font-weight:600;cursor:pointer;font-size:.95rem;margin-top:6px}
+  .btn-login:hover{background:#3d2854}
+  .erro{background:#ffebee;color:#c62828;padding:10px;border-radius:6px;font-size:.85rem;margin-bottom:12px;display:none}
+  .erro.show{display:block}
+  .cadastros{display:flex;gap:8px;margin-top:18px}
+  .PF_PJ{flex:1;background:#fff;border:1px solid #553A73;color:#553A73;padding:10px;border-radius:8px;font-weight:500;cursor:pointer;font-size:.85rem}
+  .PF_PJ:hover{background:#553A73;color:#fff}
+  .voltar-link{text-align:center;margin-top:18px}
+  .voltar-link a{color:#553A73;text-decoration:none;font-size:.85rem}
+  .test-creds{background:#f8f4ff;border-left:3px solid #553A73;padding:10px;border-radius:6px;font-size:.78rem;color:#666;margin-bottom:14px;line-height:1.5}
 </style>
 </head>
-
 <body>
-<div class="container">
-<div class="main">
+<div class="card-login">
+  <h1>Bem-vindo!</h1>
+  <p class="sub">Entre na sua conta para continuar</p>
 
-<div class="logo">
-<img src="img/Logo-png 5.svg">
-</div>
+  <div class="test-creds">
+    <strong>Credenciais de teste:</strong><br>
+    Admin: admin@ondetem.com / 123456<br>
+    Empresa: empresa@ondetem.com / 123456<br>
+    Usuário: joao@email.com / 123456
+  </div>
 
-<p class="titulo-login">Entrar como:</p>
+  <div class="tipos">
+    <button class="tipo-tab active" data-tipo="usuario" onclick="selecionarTipo('usuario')">Usuário</button>
+    <button class="tipo-tab" data-tipo="empresa" onclick="selecionarTipo('empresa')">Empresa</button>
+    <button class="tipo-tab" data-tipo="admin" onclick="selecionarTipo('admin')">Admin</button>
+  </div>
 
-<div class="tipo-tabs">
-<button class="tipo-tab active" data-tipo="usuario" onclick="selecionarTipo('usuario')">Usuário</button>
-<button class="tipo-tab" data-tipo="empresa" onclick="selecionarTipo('empresa')">Empresa</button>
-<button class="tipo-tab" data-tipo="admin" onclick="selecionarTipo('admin')">Admin</button>
-</div>
+  <div class="erro" id="loginErro"></div>
+  <input type="email" id="loginEmail" placeholder="E-mail" autocomplete="username">
+  <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password">
+  <button class="btn-login" id="btnLogin" onclick="fazerLogin()">Login | Acessar</button>
 
-<div class="acess">
-<input type="email" id="loginEmail" placeholder="E-mail">
-<input type="password" id="loginSenha" placeholder="Senha">
-<button class="button" id="btnLogin" onclick="fazerLogin()">Login | Acessar</button>
-</div>
-
-<div class="login-erro" id="loginErro"></div>
-
-<div class="cadastro-section show" id="cadastroUsuario">
-<div class="cadastro-link">
-<p>Não tem uma conta?</p>
-<button class="PF_PJ" onclick="window.location.href='cadastro-usuario.html'">
-Cadastrar como Usuário
-</button>
-</div>
+  <div class="cadastros">
+    <button class="PF_PJ" onclick="window.location.href='cadastro-usuario.html'">Cadastrar usuário</button>
+    <button class="PF_PJ" onclick="window.location.href='cadastro-empresa.html'">Cadastrar empresa</button>
+  </div>
+  <div class="voltar-link"><a href="index.html">← Voltar ao site</a></div>
 </div>
 
-<div class="cadastro-section" id="cadastroEmpresa">
-<div class="cadastro-link">
-<p>Não tem uma conta empresarial?</p>
-<button class="PF_PJ" onclick="window.location.href='cadastro-empresa.html'">
-Cadastrar Empresa
-</button>
-</div>
-</div>
-
-<div class="cadastro-section" id="cadastroAdmin">
-<div class="cadastro-link">
-<p style="opacity:.6;font-size:.8rem">Acesso restrito a administradores</p>
-</div>
-</div>
-
-<div class="voltar-link">
-<a href="index.html">← Voltar ao site</a>
-</div>
-
-</div>
-</div>
-
+<script src="auth-guard.js"></script>
 <script>
 let tipoSelecionado='usuario';
-
-function selecionarTipo(tipo){
-    tipoSelecionado=tipo;
-    document.querySelectorAll('.tipo-tab').forEach(t=>t.classList.remove('active'));
-    document.querySelector(`[data-tipo="${tipo}"]`).classList.add('active');
-    document.querySelectorAll('.cadastro-section').forEach(s=>s.classList.remove('show'));
-    document.getElementById('cadastro'+tipo.charAt(0).toUpperCase()+tipo.slice(1)).classList.add('show');
-    esconderErro();
+function selecionarTipo(t){
+  tipoSelecionado=t;
+  document.querySelectorAll('.tipo-tab').forEach(x=>x.classList.remove('active'));
+  document.querySelector(`[data-tipo="${t}"]`).classList.add('active');
+  esconderErro();
 }
-
+function destinoPorTipo(tipo){
+  const params = new URLSearchParams(location.search);
+  const redirect = params.get('redirect');
+  if (redirect) return redirect;
+  if (tipo==='admin') return '/admin';
+  if (tipo==='empresa') return '/painel-empresa';
+  return '/';
+}
 async function fazerLogin(){
-    const email=loginEmail.value.trim();
-    const senha=loginSenha.value;
-    const btn=btnLogin;
-
-    if(!email||!senha){mostrarErro('Preencha o e-mail e a senha.');return;}
-
-    btn.disabled=true; btn.textContent='Entrando...'; esconderErro();
-
-    try{
-        const response=await fetch('/api/login',{
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({email,senha,tipo:tipoSelecionado})
-        });
-
-        const resultado=await response.json();
-
-        if(response.ok){
-            sessionStorage.setItem('ondetem_usuario_logado',email);
-            sessionStorage.setItem('ondetem_usuario_tipo',tipoSelecionado);
-            window.location.href = tipoSelecionado==='admin' ? 'admin.html' : 'index.html';
-        }else{
-            mostrarErro(resultado.erro||'E-mail ou senha incorretos.');
-        }
-    }catch{
-        mostrarErro('Erro de conexão.');
-    }finally{
-        btn.disabled=false;
-        btn.textContent='Login | Acessar';
-    }
+  const email=loginEmail.value.trim(), senha=loginSenha.value;
+  if(!email||!senha){mostrarErro('Preencha o e-mail e a senha.');return;}
+  btnLogin.disabled=true; btnLogin.textContent='Entrando...'; esconderErro();
+  try{
+    const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email,senha,tipo:tipoSelecionado})});
+    const data=await r.json();
+    if(r.ok){
+      OndeTemAuth.salvarSessao(data.token, data.usuario);
+      window.location.href = destinoPorTipo(data.usuario.tipo);
+    } else mostrarErro(data.erro || 'E-mail ou senha incorretos.');
+  }catch{ mostrarErro('Erro de conexão. Verifique se o servidor está rodando.'); }
+  finally{ btnLogin.disabled=false; btnLogin.textContent='Login | Acessar'; }
 }
-
-function mostrarErro(msg){
-    loginErro.textContent=msg;
-    loginErro.classList.add('show');
-}
+function mostrarErro(m){loginErro.textContent=m;loginErro.classList.add('show');}
 function esconderErro(){loginErro.classList.remove('show');}
-
 document.addEventListener('keydown',e=>{if(e.key==='Enter')fazerLogin();});
 </script>
-
 </body>
 </html>
