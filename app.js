@@ -110,14 +110,31 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 // Mostra uma notificação local para feedback imediato ao usuário.
+// Em mobile (ex: Android Chrome), o construtor `new Notification()` lança
+// TypeError — só `ServiceWorkerRegistration.showNotification()` é suportado.
+// Por isso tentamos primeiro via Service Worker e só caímos no construtor
+// como fallback para desktops sem SW.
+const ICONE_NOTIFICACAO = './img/Logo-png 5.svg';
+
 function mostrarNotificacaoLocal(titulo, corpo) {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const opcoes = { body: corpo, icon: ICONE_NOTIFICACAO, badge: ICONE_NOTIFICACAO };
+
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready
+            .then(registration => registration.showNotification(titulo, opcoes))
+            .catch(err => {
+                console.warn('⚠ SW showNotification falhou, tentando fallback:', err);
+                tentarNotificacaoDireta(titulo, opcoes);
+            });
+        return;
+    }
+    tentarNotificacaoDireta(titulo, opcoes);
+}
+
+function tentarNotificacaoDireta(titulo, opcoes) {
     try {
-        new Notification(titulo, {
-            body: corpo,
-            icon: './icon-192.png',
-            badge: './icon-192.png'
-        });
+        new Notification(titulo, opcoes);
     } catch (err) {
         console.warn('⚠ Falha ao exibir notificação local:', err);
     }
