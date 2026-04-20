@@ -110,14 +110,40 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 // Mostra uma notificação local para feedback imediato ao usuário.
+// Em mobile (ex: Android Chrome), o construtor `new Notification()` lança
+// TypeError — só `ServiceWorkerRegistration.showNotification()` é suportado.
+// Por isso tentamos primeiro via Service Worker e só caímos no construtor
+// como fallback para desktops sem SW.
+const ICONE_NOTIFICACAO = './img/Logo-png 5.svg';
+
 function mostrarNotificacaoLocal(titulo, corpo) {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
-    try {
-        new Notification(titulo, {
-            body: corpo,
-            icon: './icon-192.png',
-            badge: './icon-192.png'
+    const opcoes = { body: corpo, icon: ICONE_NOTIFICACAO, badge: ICONE_NOTIFICACAO };
+
+    // Se SW não é suportado, cai direto no construtor.
+    if (!('serviceWorker' in navigator)) {
+        tentarNotificacaoDireta(titulo, opcoes);
+        return;
+    }
+
+    // `navigator.serviceWorker.ready` NUNCA resolve/rejeita quando não há um
+    // registration ativo (ex: o registro falhou). Por isso corremos ele contra
+    // um timeout — se em 3s o SW não ficou pronto, usamos o fallback.
+    const swReady = navigator.serviceWorker.ready;
+    const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('SW ready timeout')), 3000)
+    );
+    Promise.race([swReady, timeout])
+        .then(registration => registration.showNotification(titulo, opcoes))
+        .catch(err => {
+            console.warn('⚠ SW showNotification indisponível, usando fallback:', err);
+            tentarNotificacaoDireta(titulo, opcoes);
         });
+}
+
+function tentarNotificacaoDireta(titulo, opcoes) {
+    try {
+        new Notification(titulo, opcoes);
     } catch (err) {
         console.warn('⚠ Falha ao exibir notificação local:', err);
     }
