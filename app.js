@@ -8,10 +8,23 @@ const VAPID_PUBLIC_KEY = 'BNo6E7y9E_v1G9QyXq8zY4Z5R8J2L6m5n4b3v2c1x0z9a8s7d6f5g4
 
 // 1. Registra o Service Worker ao carregar a página
 if ('serviceWorker' in navigator) {
+    // Recarrega uma única vez quando um novo Service Worker assume o controle,
+    // garantindo que correções de bugs no HTML/JS cheguem ao usuário sem exigir
+    // um hard-reload manual.
+    let jaRecarregou = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (jaRecarregou) return;
+        jaRecarregou = true;
+        console.log('♻ Novo Service Worker ativo. Recarregando página…');
+        window.location.reload();
+    });
+
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./service-worker.js')
             .then(reg => {
                 console.log('✓ SW registrado para Push:', reg.scope);
+                // Verifica proativamente se há um SW novo disponível
+                reg.update().catch(() => {});
                 configurarBotao(reg);
             })
             .catch(err => {

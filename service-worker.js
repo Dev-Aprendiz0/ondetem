@@ -3,8 +3,8 @@
  * Implementação baseada na Aula 6 - Engenharia de Software
  */
 
-const CACHE_NAME = 'ondetem-cache-v4';
-const RUNTIME_CACHE = 'ondetem-runtime-v4';
+const CACHE_NAME = 'ondetem-cache-v5';
+const RUNTIME_CACHE = 'ondetem-runtime-v5';
 
 // Arquivos essenciais para funcionar offline
 const urlsToCache = [
@@ -50,18 +50,33 @@ self.addEventListener('install', event => {
 
 // Evento: Ativação do Service Worker
 self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE) {
-            console.log('🗑 Removendo cache antigo:', cacheName);
-            return caches.delete(cacheName);
-          }
+  event.waitUntil((async () => {
+    const cacheNames = await caches.keys();
+    await Promise.all(
+      cacheNames
+        .filter(name => name !== CACHE_NAME && name !== RUNTIME_CACHE)
+        .map(name => {
+          console.log('🗑 Removendo cache antigo:', name);
+          return caches.delete(name);
         })
-      );
-    }).then(() => self.clients.claim())
-  );
+    );
+    await self.clients.claim();
+    // Força todas as abas abertas a recarregarem uma única vez depois que um
+    // novo Service Worker assume o controle, garantindo que correções de bugs
+    // no HTML/JS cheguem ao usuário mesmo quando um SW antigo estava servindo
+    // versões obsoletas via cache-first.
+    const windowClients = await self.clients.matchAll({ type: 'window' });
+    for (const client of windowClients) {
+      try {
+        client.postMessage({ type: 'SW_UPDATED' });
+        if (typeof client.navigate === 'function') {
+          await client.navigate(client.url);
+        }
+      } catch (err) {
+        console.warn('⚠ Não foi possível recarregar cliente:', err);
+      }
+    }
+  })());
 });
 
 // Evento: Interceptação de requisições
@@ -79,16 +94,13 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  const isHtml = request.mode === 'navigate' ||
-    (request.headers.get('accept') || '').includes('text/html');
-
   if (url.origin === self.location.origin) {
-    // Network-first para HTML/JS/CSS do próprio site: garante que correções de bugs
-    // cheguem ao usuário sem ficar presas em cache antigo. Fallback para cache offline.
-    const estrategia = isHtml ? networkFirst : staleWhileRevalidate;
-    event.respondWith(estrategia(request, CACHE_NAME));
+    // Network-first para todo conteúdo do próprio site (HTML/JS/CSS/manifest):
+    // garante que correções de bugs cheguem ao usuário sem ficar presas em cache
+    // antigo. Fallback para cache quando offline.
+    event.respondWith(networkFirst(request, CACHE_NAME));
   } else {
-    // Recursos externos (CDNs) — cache-first com atualização em background
+    // Recursos externos (CDNs, imagens) — cache-first com atualização em background
     event.respondWith(staleWhileRevalidate(request, RUNTIME_CACHE));
   }
 });
