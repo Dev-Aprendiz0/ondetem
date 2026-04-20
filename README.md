@@ -141,7 +141,7 @@ No modal de agendamento da home, ao escolher **Cartão de Crédito** aparece um 
 
 Última execução: **20/04/2026**, em `http://localhost:3000` (servidor Express local), Chrome maximizado, gravação única com anotações por teste. O plano completo está em [`test-plan.md`](./test-plan.md) e o relatório detalhado em [`test-report.md`](./test-report.md).
 
-🎥 **Vídeo da execução completa:** https://app.devin.ai/attachments/eaab7858-39f8-4fce-9635-c07bb56667c8/rec-4a6081d5-1cbc-41f6-959f-e63eee4c36b2-edited.mp4
+🎥 **Vídeo da execução completa:** (./docs/video/completo.mp4)
 
 | # | Teste | Fix/feature | Resultado |
 |---|-------|-------------|-----------|
