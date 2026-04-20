@@ -120,16 +120,25 @@ function mostrarNotificacaoLocal(titulo, corpo) {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
     const opcoes = { body: corpo, icon: ICONE_NOTIFICACAO, badge: ICONE_NOTIFICACAO };
 
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready
-            .then(registration => registration.showNotification(titulo, opcoes))
-            .catch(err => {
-                console.warn('⚠ SW showNotification falhou, tentando fallback:', err);
-                tentarNotificacaoDireta(titulo, opcoes);
-            });
+    // Se SW não é suportado, cai direto no construtor.
+    if (!('serviceWorker' in navigator)) {
+        tentarNotificacaoDireta(titulo, opcoes);
         return;
     }
-    tentarNotificacaoDireta(titulo, opcoes);
+
+    // `navigator.serviceWorker.ready` NUNCA resolve/rejeita quando não há um
+    // registration ativo (ex: o registro falhou). Por isso corremos ele contra
+    // um timeout — se em 3s o SW não ficou pronto, usamos o fallback.
+    const swReady = navigator.serviceWorker.ready;
+    const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('SW ready timeout')), 3000)
+    );
+    Promise.race([swReady, timeout])
+        .then(registration => registration.showNotification(titulo, opcoes))
+        .catch(err => {
+            console.warn('⚠ SW showNotification indisponível, usando fallback:', err);
+            tentarNotificacaoDireta(titulo, opcoes);
+        });
 }
 
 function tentarNotificacaoDireta(titulo, opcoes) {
