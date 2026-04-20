@@ -214,6 +214,9 @@ function inicializarModal() {
             );
 
             if (indexCard !== -1) {
+                // Exige autenticação antes de abrir o modal de agendamento
+                if (!exigirUsuarioLogado(nomeLocal)) return;
+
                 estabelecimentoSelecionado = ESTABELECIMENTOS[indexCard];
                 document.getElementById('modalAgendamentoLabel').innerText = `Agendar em: ${nomeLocal}`;
                 preencherHorariosDisponiveis();
@@ -222,6 +225,50 @@ function inicializarModal() {
             }
         }
     });
+}
+
+/**
+ * Verifica se existe um usuário logado do tipo "usuario" antes de permitir agendar.
+ * Caso contrário, abre o modal pedindo login ou cadastro.
+ * @returns {Boolean} true se o usuário pode prosseguir, false se o fluxo foi interrompido.
+ */
+function exigirUsuarioLogado(nomeLocal) {
+    const auth = window.OndeTemAuth;
+    const usuario = auth ? auth.obterUsuario() : null;
+    const token = auth ? auth.obterToken() : null;
+
+    if (usuario && token && usuario.tipo === 'usuario') {
+        return true;
+    }
+
+    if (usuario && usuario.tipo && usuario.tipo !== 'usuario') {
+        alert('Apenas contas de "Usuário" podem realizar agendamentos. Faça login com uma conta de usuário.');
+        return false;
+    }
+
+    abrirModalLoginNecessario(nomeLocal);
+    return false;
+}
+
+function abrirModalLoginNecessario(nomeLocal) {
+    const redirect = encodeURIComponent(location.pathname + location.search);
+    const modalEl = document.getElementById('modalLoginNecessario');
+    if (!modalEl) {
+        // Fallback caso o modal não esteja presente no HTML
+        const ir = confirm('Para agendar, você precisa estar logado.\n\nOK → Fazer login\nCancelar → Criar conta');
+        window.location.href = ir ? `/login?redirect=${redirect}` : '/cadastro-usuario';
+        return;
+    }
+    const textoDestino = modalEl.querySelector('[data-destino]');
+    if (textoDestino) {
+        textoDestino.textContent = nomeLocal ? `em ${nomeLocal}` : '';
+    }
+    const btnLogin = modalEl.querySelector('#btnIrLogin');
+    if (btnLogin) {
+        btnLogin.href = `login.html?redirect=${redirect}`;
+    }
+    const bModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    bModal.show();
 }
 
 function preencherHorariosDisponiveis() {
@@ -255,6 +302,14 @@ async function processarAgendamento(form, statusPagamento) {
     const horaAgendamento = document.getElementById('horaAgendamento').value;
     const metodoPagamento = document.getElementById('metodoPagamento').value;
 
+    // Revalida autenticação antes de submeter (defesa em profundidade)
+    if (!exigirUsuarioLogado(estabelecimentoSelecionado && estabelecimentoSelecionado.nome)) {
+        const modalElement = document.getElementById('modalAgendamento');
+        const bModal = bootstrap.Modal.getInstance(modalElement);
+        if (bModal) bModal.hide();
+        return;
+    }
+
     // Validações
     if (!dataAgendamento || !horaAgendamento || !metodoPagamento) {
         statusPagamento.innerHTML = '<b class="text-danger"><i class="bi bi-exclamation-circle"></i> Preencha todos os campos!</b>';
@@ -277,65 +332,79 @@ async function processarAgendamento(form, statusPagamento) {
     statusPagamento.innerHTML = '<i class="bi bi-hourglass-split"></i> Conectando ao servidor...';
 
     const dadosAgendamento = {
-        id: Date.now(),
         estabelecimento: estabelecimentoSelecionado.nome,
-        estabelecimentoId: estabelecimentoSelecionado.id,
         data: dataAgendamento,
         hora: horaAgendamento,
-        pagamento: metodoPagamento,
-        timestamp: new Date().toLocaleString('pt-BR'),
-        status: 'confirmado'
+        pagamento: metodoPagamento
     };
 
     try {
-        // Simular chamada à API
-        const resposta = await fetch('https://jsonplaceholder.typicode.com/posts', {
+        const resposta = await window.OndeTemAuth.api('/api/agendamentos', {
             method: 'POST',
-            body: JSON.stringify(dadosAgendamento),
-            headers: { 'Content-type': 'application/json; charset=UTF-8' }
+            body: JSON.stringify(dadosAgendamento)
         });
 
-        if (resposta.ok) {
-            const resultado = await resposta.json();
+        const resultado = await resposta.json().catch(() => ({}));
 
-            // Salvar no localStorage
-            let agendamentos = JSON.parse(localStorage.getItem(STORAGE_KEYS.agendamentos)) || [];
-            agendamentos.push(dadosAgendamento);
-            localStorage.setItem(STORAGE_KEYS.agendamentos, JSON.stringify(agendamentos));
-
-            // Mostrar sucesso
-            statusPagamento.innerHTML = '<b class="text-success"><i class="bi bi-check-circle"></i> Pagamento Aprovado!</b>';
-            
+        if (!resposta.ok) {
+            const msgErro = resultado.erro || `Erro ${resposta.status}`;
+            statusPagamento.innerHTML = `<b class="text-danger"><i class="bi bi-x-circle"></i> ${msgErro}</b>`;
             setTimeout(() => {
-                const modalElement = document.getElementById('modalAgendamento');
-                const bModal = bootstrap.Modal.getInstance(modalElement);
-                bModal.hide();
-                form.reset();
-                statusPagamento.innerHTML = '';
                 btnSubmit.disabled = false;
                 btnSubmit.innerHTML = 'Confirmar e Pagar';
+            }, 2000);
+            return;
+        }
 
-                // Mostrar notificação de sucesso
+        // Backup local para uso offline / histórico
+        const registroLocal = {
+            id: resultado.dados && resultado.dados.id ? resultado.dados.id : Date.now(),
+            estabelecimento: dadosAgendamento.estabelecimento,
+            estabelecimentoId: estabelecimentoSelecionado.id,
+            data: dadosAgendamento.data,
+            hora: dadosAgendamento.hora,
+            pagamento: dadosAgendamento.pagamento,
+            timestamp: new Date().toLocaleString('pt-BR'),
+            status: (resultado.dados && resultado.dados.status) || 'pendente'
+        };
+        const agendamentos = JSON.parse(localStorage.getItem(STORAGE_KEYS.agendamentos)) || [];
+        agendamentos.push(registroLocal);
+        localStorage.setItem(STORAGE_KEYS.agendamentos, JSON.stringify(agendamentos));
+
+        statusPagamento.innerHTML = '<b class="text-success"><i class="bi bi-check-circle"></i> Agendamento confirmado!</b>';
+
+        setTimeout(() => {
+            const modalElement = document.getElementById('modalAgendamento');
+            const bModal = bootstrap.Modal.getInstance(modalElement);
+            if (bModal) bModal.hide();
+            form.reset();
+            statusPagamento.innerHTML = '';
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = 'Confirmar e Pagar';
+
+            if (typeof mostrarNotificacao === 'function') {
                 mostrarNotificacao(
-                    `Agendamento confirmado em ${dadosAgendamento.estabelecimento}`,
+                    `Agendamento confirmado em ${registroLocal.estabelecimento}`,
                     'success'
                 );
+            }
 
-                // DISPARAR NOTIFICAÇÃO PUSH (Simulada conforme Aula 6)
-                if (window.mostrarNotificacaoPush) {
-                    window.mostrarNotificacaoPush(
-                        'Agendamento Confirmado! ✅',
-                        `Sua reserva em ${dadosAgendamento.estabelecimento} para o dia ${formatarData(dadosAgendamento.data)} às ${dadosAgendamento.hora} foi realizada com sucesso.`
-                    );
-                }
-                
-                console.log('✓ Agendamento realizado:', dadosAgendamento);
-            }, 2000);
-        }
+            if (window.mostrarNotificacaoPush) {
+                const dataFormatada = typeof formatarData === 'function'
+                    ? formatarData(registroLocal.data)
+                    : registroLocal.data;
+                window.mostrarNotificacaoPush(
+                    'Agendamento Confirmado! ✅',
+                    `Sua reserva em ${registroLocal.estabelecimento} para o dia ${dataFormatada} às ${registroLocal.hora} foi realizada com sucesso.`
+                );
+            }
+
+            console.log('✓ Agendamento realizado:', registroLocal);
+        }, 1500);
     } catch (erro) {
-        statusPagamento.innerHTML = '<b class="text-danger"><i class="bi bi-x-circle"></i> Erro no processamento.</b>';
         console.error('✗ Erro ao processar agendamento:', erro);
-        
+        statusPagamento.innerHTML = '<b class="text-danger"><i class="bi bi-x-circle"></i> Erro de conexão. Verifique se o servidor está rodando.</b>';
+
         setTimeout(() => {
             btnSubmit.disabled = false;
             btnSubmit.innerHTML = 'Confirmar e Pagar';
