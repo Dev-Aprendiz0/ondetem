@@ -10,6 +10,7 @@ PWA (Progressive Web App) em Node.js/Express para conectar clientes a salões, c
 - [Páginas](#páginas)
 - [Fluxo de cadastro de empresa com localização no mapa](#fluxo-de-cadastro-de-empresa-com-localização-no-mapa)
 - [Mapa de empresas próximas (para usuários)](#mapa-de-empresas-próximas-para-usuários)
+- [Simulação de pagamento (cartão e Pix)](#simulação-de-pagamento-cartão-e-pix)
 - [API relevante](#api-relevante)
 - [Plano de testes](#plano-de-testes-cadastros--admin)
 
@@ -59,15 +60,79 @@ Na home (`/`), o mapa (Leaflet + OpenStreetMap) mostra três camadas:
 
 Ao clicar em um marcador roxo, o popup mostra o nome, categorias, endereço e telefone da empresa, e — quando a geolocalização do usuário está disponível — a **distância aproximada até você** (em metros se < 1 km, senão em km), calculada com a fórmula de Haversine.
 
+## Simulação de pagamento (cartão e Pix)
+
+O app expõe uma **API de simulação de pagamento** para permitir testar o fluxo de agendamento de ponta a ponta sem integrar um gateway real. Todos os endpoints exigem token de login.
+
+> ⚠️ **É uma simulação.** Nada é cobrado de verdade. Não envie dados reais de cartão. Os dados sensíveis (número completo e CVV) **nunca** são persistidos nem devolvidos pela API — apenas bandeira, 4 últimos dígitos e nome do titular.
+
+### Regras de simulação
+
+**Cartão de crédito (`POST /api/pagamentos/cartao`)**
+- Número precisa passar no algoritmo de **Luhn**, ter entre 13 e 19 dígitos. Bandeira é detectada pelo prefixo (Visa, Mastercard, Amex, Discover, Hipercard, Elo).
+- Validade em `MM/AA` ou `MM/AAAA`, precisa estar no futuro.
+- CVV de 3 ou 4 dígitos.
+- Números de teste:
+  - ✅ Aprovado: `4111 1111 1111 1111`, `5555 5555 5555 4444`, ou qualquer outro que passe no Luhn e **não** termine em `0000`.
+  - ❌ Recusado: qualquer cartão que passe no Luhn mas termine em `0000` (ex.: `4242 4242 4242 0000`) — simula "fundos insuficientes". A API responde **402 Payment Required**.
+
+**Pix (`POST /api/pagamentos/pix` + `POST /api/pagamentos/pix/:id/confirmar`)**
+- `/api/pagamentos/pix` gera uma cobrança com `status: "aguardando"`, um `txid` aleatório, um código "copia e cola" simulado e validade de 30 minutos.
+- Em produção, a baixa viria por webhook do PSP. Como isso é uma simulação, expomos `POST /api/pagamentos/pix/:id/confirmar` para o próprio pagador "confirmar" o Pix — a API então passa o status para `aprovado` e devolve um `endToEndId`.
+- Após a expiração (`expiraEm`), qualquer tentativa de confirmar devolve **410 Gone** com status `expirado`.
+
+### Exemplos com `curl`
+
+```bash
+# 1) Login como usuário comum
+TOKEN=$(curl -s -X POST http://localhost:3000/api/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"joao@email.com","senha":"123456","tipo":"usuario"}' \
+  | jq -r .token)
+
+# 2) Pagamento com cartão — aprovado
+curl -s -X POST http://localhost:3000/api/pagamentos/cartao \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"valor":95.5,"numero":"4111 1111 1111 1111","nome":"JOAO SILVA","validade":"12/29","cvv":"123","parcelas":2}'
+
+# 3) Pagamento com cartão — recusado (termina em 0000)
+curl -s -X POST http://localhost:3000/api/pagamentos/cartao \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"valor":50,"numero":"4242 4242 4242 0000","nome":"JOAO","validade":"12/29","cvv":"123"}'
+
+# 4) Gerar cobrança Pix
+PIX=$(curl -s -X POST http://localhost:3000/api/pagamentos/pix \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"valor":120.75}')
+echo "$PIX"
+
+# 5) Confirmar Pix (simula baixa do PSP)
+PIX_ID=$(echo "$PIX" | jq -r .dados.id)
+curl -s -X POST "http://localhost:3000/api/pagamentos/pix/$PIX_ID/confirmar" \
+  -H "Authorization: Bearer $TOKEN"
+
+# 6) Listar pagamentos do usuário logado
+curl -s http://localhost:3000/api/pagamentos -H "Authorization: Bearer $TOKEN"
+```
+
+### UI integrada
+
+No modal de agendamento da home, ao escolher **Cartão de Crédito** aparece um formulário com máscaras para número, validade e CVV. Ao escolher **Pix**, ao confirmar é exibido o QR Code + "copia e cola" e um botão **"Já paguei (simular confirmação)"** que dispara `POST /api/pagamentos/pix/:id/confirmar` e, em seguida, cria o agendamento com o `pagamentoId` associado.
+
 ## API relevante
 
-| Método | Rota                          | Descrição                                                                 |
-|-------:|-------------------------------|---------------------------------------------------------------------------|
-| POST   | `/api/login`                  | Autentica admin/empresa/usuário e devolve `token` + `usuario`.            |
-| POST   | `/api/empresas`               | Cadastra nova empresa. **Exige `lat`/`lng` válidos**. Persiste endereço estruturado, categorias, serviços e horários. |
-| GET    | `/api/empresas/publicas`      | Lista empresas com coordenadas válidas para exibição no mapa público (sem senhas, sem dados internos). |
-| GET    | `/api/empresas`               | Lista completa para o painel admin (sem senha).                           |
-| POST   | `/api/agendamentos`           | Cria agendamento (exige token de `usuario`).                              |
+| Método | Rota                                         | Descrição                                                                 |
+|-------:|----------------------------------------------|---------------------------------------------------------------------------|
+| POST   | `/api/login`                                 | Autentica admin/empresa/usuário e devolve `token` + `usuario`.            |
+| POST   | `/api/empresas`                              | Cadastra nova empresa. **Exige `lat`/`lng` válidos**.                      |
+| GET    | `/api/empresas/publicas`                     | Lista empresas com coordenadas válidas (campos seguros).                   |
+| GET    | `/api/empresas`                              | Lista completa para o painel admin (sem senha).                            |
+| POST   | `/api/agendamentos`                          | Cria agendamento (exige token de `usuario`). Aceita `pagamentoId` opcional. |
+| POST   | `/api/pagamentos/cartao`                     | **Simula** cobrança no cartão de crédito (Luhn, validade, CVV).           |
+| POST   | `/api/pagamentos/pix`                        | **Simula** geração de cobrança Pix com QR Code.                           |
+| POST   | `/api/pagamentos/pix/:id/confirmar`          | **Simula** confirmação do Pix (status `aguardando` → `aprovado`).          |
+| GET    | `/api/pagamentos`                            | Lista pagamentos do usuário logado (admin vê todos).                       |
+| GET    | `/api/pagamentos/:id`                        | Consulta status de um pagamento específico.                                |
 
 ---
 

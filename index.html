@@ -221,6 +221,11 @@
           </div>
 
           <div class="mb-3">
+            <label class="form-label" for="valorAgendamento">Valor a pagar (R$):</label>
+            <input type="number" step="0.01" min="0.01" class="form-control" id="valorAgendamento" value="60.00" required>
+          </div>
+
+          <div class="mb-3">
             <label class="form-label">Forma de Pagamento:</label>
             <select class="form-select" id="metodoPagamento" required>
               <option value="pix">Pix</option>
@@ -229,9 +234,66 @@
             </select>
           </div>
 
+          <!-- Bloco dinâmico: Cartão de Crédito -->
+          <div id="blocoCartao" class="border rounded p-3 mb-3 bg-light" hidden>
+            <div class="mb-2">
+              <label class="form-label small mb-1" for="cartaoNumero">Número do cartão</label>
+              <input type="text" inputmode="numeric" autocomplete="cc-number" class="form-control" id="cartaoNumero" placeholder="0000 0000 0000 0000" maxlength="23">
+            </div>
+            <div class="mb-2">
+              <label class="form-label small mb-1" for="cartaoNome">Nome impresso no cartão</label>
+              <input type="text" autocomplete="cc-name" class="form-control" id="cartaoNome" placeholder="Como aparece no cartão">
+            </div>
+            <div class="row g-2">
+              <div class="col-5">
+                <label class="form-label small mb-1" for="cartaoValidade">Validade</label>
+                <input type="text" inputmode="numeric" autocomplete="cc-exp" class="form-control" id="cartaoValidade" placeholder="MM/AA" maxlength="5">
+              </div>
+              <div class="col-3">
+                <label class="form-label small mb-1" for="cartaoCvv">CVV</label>
+                <input type="text" inputmode="numeric" autocomplete="cc-csc" class="form-control" id="cartaoCvv" placeholder="123" maxlength="4">
+              </div>
+              <div class="col-4">
+                <label class="form-label small mb-1" for="cartaoParcelas">Parcelas</label>
+                <select class="form-select" id="cartaoParcelas">
+                  <option value="1">1x</option>
+                  <option value="2">2x</option>
+                  <option value="3">3x</option>
+                  <option value="6">6x</option>
+                  <option value="12">12x</option>
+                </select>
+              </div>
+            </div>
+            <div class="small text-muted mt-2">
+              <i class="bi bi-info-circle"></i>
+              Ambiente de simulação. Use <code>4111 1111 1111 1111</code> para aprovar
+              ou qualquer cartão terminando em <code>0000</code> para testar recusa.
+            </div>
+          </div>
+
+          <!-- Bloco dinâmico: Pix -->
+          <div id="blocoPix" class="border rounded p-3 mb-3 bg-light text-center" hidden>
+            <div id="pixInicial">
+              <i class="bi bi-qr-code fs-1 text-danger"></i>
+              <p class="small text-muted mb-0">Ao confirmar, geraremos uma cobrança Pix simulada com QR Code e código "copia e cola".</p>
+            </div>
+            <div id="pixCobranca" hidden>
+              <p class="small mb-2"><b>Escaneie o QR Code ou copie o código abaixo:</b></p>
+              <div id="pixQrCode" class="d-flex justify-content-center mb-2"></div>
+              <div class="input-group input-group-sm mb-2">
+                <input type="text" id="pixCopiaECola" class="form-control font-monospace" readonly>
+                <button type="button" class="btn btn-outline-secondary" id="btnCopiarPix"><i class="bi bi-clipboard"></i></button>
+              </div>
+              <p class="small text-muted mb-2">Expira em <span id="pixExpira">30 min</span>.</p>
+              <button type="button" class="btn btn-success btn-sm w-100" id="btnPagueiPix">
+                <i class="bi bi-check-circle"></i> Já paguei (simular confirmação)
+              </button>
+            </div>
+          </div>
+
           <hr>
           <div id="statusPagamento" class="text-center small mb-2"></div>
-          <button type="submit" class="btn btn-danger w-100 rounded-pill">Confirmar e Pagar</button>
+          <button type="submit" class="btn btn-danger w-100 rounded-pill" id="btnConfirmarPagamento">Confirmar e Pagar</button>
         </form>
       </div>
     </div>

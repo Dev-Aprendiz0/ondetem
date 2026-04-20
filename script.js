@@ -288,9 +288,75 @@ function preencherHorariosDisponiveis() {
 // ============================================
 // 7. FORMULÁRIO E PAGAMENTO
 // ============================================
+// Guarda a cobrança Pix da vez para que o botão "Já paguei" saiba qual
+// pagamento confirmar na API.
+let pixCobrancaAtual = null;
+
 function inicializarFormulario() {
     const form = document.getElementById('formAgendamento');
     const statusPagamento = document.getElementById('statusPagamento');
+    const selectMetodo = document.getElementById('metodoPagamento');
+    const blocoCartao = document.getElementById('blocoCartao');
+    const blocoPix = document.getElementById('blocoPix');
+
+    // Troca entre blocos conforme método selecionado.
+    function atualizarBlocoPagamento() {
+        const metodo = selectMetodo.value;
+        if (blocoCartao) blocoCartao.hidden = metodo !== 'cartao';
+        if (blocoPix) blocoPix.hidden = metodo !== 'pix';
+        // Ao trocar para outro método, reseta qualquer cobrança Pix pendente.
+        if (metodo !== 'pix') resetarBlocoPix();
+        statusPagamento.innerHTML = '';
+    }
+    selectMetodo.addEventListener('change', atualizarBlocoPagamento);
+    atualizarBlocoPagamento();
+
+    // Máscaras dos campos de cartão (estética; o servidor é quem valida).
+    const inputNumero = document.getElementById('cartaoNumero');
+    const inputValidade = document.getElementById('cartaoValidade');
+    const inputCvv = document.getElementById('cartaoCvv');
+    if (inputNumero) {
+        inputNumero.addEventListener('input', () => {
+            const d = inputNumero.value.replace(/\D/g, '').slice(0, 19);
+            inputNumero.value = d.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+        });
+    }
+    if (inputValidade) {
+        inputValidade.addEventListener('input', () => {
+            const d = inputValidade.value.replace(/\D/g, '').slice(0, 4);
+            inputValidade.value = d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d;
+        });
+    }
+    if (inputCvv) {
+        inputCvv.addEventListener('input', () => {
+            inputCvv.value = inputCvv.value.replace(/\D/g, '').slice(0, 4);
+        });
+    }
+
+    // Botão "copiar" do Pix.
+    const btnCopiar = document.getElementById('btnCopiarPix');
+    if (btnCopiar) {
+        btnCopiar.addEventListener('click', async () => {
+            const el = document.getElementById('pixCopiaECola');
+            if (!el || !el.value) return;
+            try {
+                await navigator.clipboard.writeText(el.value);
+                btnCopiar.innerHTML = '<i class="bi bi-check2"></i>';
+                setTimeout(() => { btnCopiar.innerHTML = '<i class="bi bi-clipboard"></i>'; }, 1500);
+            } catch (_) {
+                el.select();
+                document.execCommand('copy');
+            }
+        });
+    }
+
+    // Botão "Já paguei (simular confirmação)" do Pix.
+    const btnPaguei = document.getElementById('btnPagueiPix');
+    if (btnPaguei) {
+        btnPaguei.addEventListener('click', async () => {
+            await confirmarPixSimulado(form, statusPagamento);
+        });
+    }
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -298,11 +364,34 @@ function inicializarFormulario() {
     });
 }
 
+function resetarBlocoPix() {
+    pixCobrancaAtual = null;
+    const inicial = document.getElementById('pixInicial');
+    const cobranca = document.getElementById('pixCobranca');
+    if (inicial) inicial.hidden = false;
+    if (cobranca) cobranca.hidden = true;
+    const qr = document.getElementById('pixQrCode');
+    if (qr) qr.innerHTML = '';
+    const cc = document.getElementById('pixCopiaECola');
+    if (cc) cc.value = '';
+}
+
+function renderizarQrCodePix(copiaECola) {
+    const container = document.getElementById('pixQrCode');
+    if (!container) return;
+    // Usa serviço público para gerar o QR. Se estiver offline, o usuário ainda
+    // consegue usar o "copia e cola" abaixo.
+    const src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(copiaECola)}`;
+    container.innerHTML = `<img src="${src}" width="180" height="180" alt="QR Code Pix">`;
+}
+
 async function processarAgendamento(form, statusPagamento) {
     const btnSubmit = form.querySelector('button[type="submit"]');
     const dataAgendamento = document.getElementById('dataAgendamento').value;
     const horaAgendamento = document.getElementById('horaAgendamento').value;
     const metodoPagamento = document.getElementById('metodoPagamento').value;
+    const valorInput = document.getElementById('valorAgendamento');
+    const valor = valorInput ? Number(valorInput.value) : 0;
 
     // Revalida autenticação antes de submeter (defesa em profundidade)
     if (!exigirUsuarioLogado(estabelecimentoSelecionado && estabelecimentoSelecionado.nome)) {
@@ -312,106 +401,208 @@ async function processarAgendamento(form, statusPagamento) {
         return;
     }
 
-    // Validações
     if (!dataAgendamento || !horaAgendamento || !metodoPagamento) {
         statusPagamento.innerHTML = '<b class="text-danger"><i class="bi bi-exclamation-circle"></i> Preencha todos os campos!</b>';
         return;
     }
 
-    // Validar data (não pode ser no passado)
     const dataSelecionada = new Date(dataAgendamento);
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
-
     if (dataSelecionada < hoje) {
         statusPagamento.innerHTML = '<b class="text-danger"><i class="bi bi-exclamation-circle"></i> Selecione uma data futura!</b>';
         return;
     }
+    if (metodoPagamento !== 'local' && (!Number.isFinite(valor) || valor <= 0)) {
+        statusPagamento.innerHTML = '<b class="text-danger"><i class="bi bi-exclamation-circle"></i> Informe um valor válido para o pagamento.</b>';
+        return;
+    }
 
-    // Desabilitar botão e mostrar progresso
     btnSubmit.disabled = true;
     btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processando...';
     statusPagamento.innerHTML = '<i class="bi bi-hourglass-split"></i> Conectando ao servidor...';
 
+    try {
+        // 1) Processa o pagamento (se houver) antes de criar o agendamento.
+        let pagamento = null;
+        if (metodoPagamento === 'cartao') {
+            pagamento = await pagarCartao(valor, statusPagamento);
+            if (!pagamento) return reabilitarBotao(btnSubmit);
+        } else if (metodoPagamento === 'pix') {
+            // Para Pix mostramos o QR code e paramos por aqui. A criação do
+            // agendamento acontece no botão "Já paguei (simular confirmação)".
+            const criado = await criarCobrancaPix(valor, statusPagamento);
+            if (!criado) return reabilitarBotao(btnSubmit);
+            statusPagamento.innerHTML = '<i class="bi bi-qr-code-scan"></i> Aguardando pagamento Pix...';
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = 'Confirmar e Pagar';
+            return;
+        }
+
+        // 2) Cria o agendamento (com ou sem pagamento associado).
+        await criarAgendamento({
+            form, statusPagamento, btnSubmit,
+            dataAgendamento, horaAgendamento, metodoPagamento, pagamento
+        });
+    } catch (erro) {
+        console.error('✗ Erro ao processar agendamento:', erro);
+        statusPagamento.innerHTML = '<b class="text-danger"><i class="bi bi-x-circle"></i> Erro de conexão. Verifique se o servidor está rodando.</b>';
+        reabilitarBotao(btnSubmit);
+    }
+}
+
+function reabilitarBotao(btnSubmit) {
+    setTimeout(() => {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = 'Confirmar e Pagar';
+    }, 2000);
+}
+
+async function pagarCartao(valor, statusPagamento) {
+    const numero = (document.getElementById('cartaoNumero').value || '').trim();
+    const nome = (document.getElementById('cartaoNome').value || '').trim();
+    const validade = (document.getElementById('cartaoValidade').value || '').trim();
+    const cvv = (document.getElementById('cartaoCvv').value || '').trim();
+    const parcelas = Number(document.getElementById('cartaoParcelas').value) || 1;
+
+    if (!numero || !nome || !validade || !cvv) {
+        statusPagamento.innerHTML = '<b class="text-danger"><i class="bi bi-exclamation-circle"></i> Preencha todos os dados do cartão.</b>';
+        return null;
+    }
+
+    statusPagamento.innerHTML = '<i class="bi bi-credit-card"></i> Autorizando cartão...';
+    const resp = await window.OndeTemAuth.api('/api/pagamentos/cartao', {
+        method: 'POST',
+        body: JSON.stringify({ valor, numero, nome, validade, cvv, parcelas })
+    });
+    const json = await resp.json().catch(() => ({}));
+    if (!resp.ok || (json.dados && json.dados.status !== 'aprovado')) {
+        const msg = (json.dados && json.dados.motivo) || json.erro || 'Pagamento recusado.';
+        statusPagamento.innerHTML = `<b class="text-danger"><i class="bi bi-x-circle"></i> ${msg}</b>`;
+        return null;
+    }
+    statusPagamento.innerHTML = `<b class="text-success"><i class="bi bi-check-circle"></i> Cartão aprovado (autorização ${json.dados.codigoAutorizacao}).</b>`;
+    return json.dados;
+}
+
+async function criarCobrancaPix(valor, statusPagamento) {
+    statusPagamento.innerHTML = '<i class="bi bi-qr-code"></i> Gerando cobrança Pix...';
+    const resp = await window.OndeTemAuth.api('/api/pagamentos/pix', {
+        method: 'POST',
+        body: JSON.stringify({ valor })
+    });
+    const json = await resp.json().catch(() => ({}));
+    if (!resp.ok || !json.dados) {
+        statusPagamento.innerHTML = `<b class="text-danger"><i class="bi bi-x-circle"></i> ${json.erro || 'Não foi possível gerar a cobrança Pix.'}</b>`;
+        return null;
+    }
+    pixCobrancaAtual = json.dados;
+    document.getElementById('pixInicial').hidden = true;
+    document.getElementById('pixCobranca').hidden = false;
+    document.getElementById('pixCopiaECola').value = json.dados.copiaECola;
+    renderizarQrCodePix(json.dados.copiaECola);
+    return json.dados;
+}
+
+async function confirmarPixSimulado(form, statusPagamento) {
+    if (!pixCobrancaAtual) return;
+    const btnPaguei = document.getElementById('btnPagueiPix');
+    const btnSubmit = form.querySelector('button[type="submit"]');
+    btnPaguei.disabled = true;
+    btnPaguei.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Confirmando...';
+    try {
+        const resp = await window.OndeTemAuth.api(`/api/pagamentos/pix/${pixCobrancaAtual.id}/confirmar`, {
+            method: 'POST'
+        });
+        const json = await resp.json().catch(() => ({}));
+        if (!resp.ok || (json.dados && json.dados.status !== 'aprovado')) {
+            statusPagamento.innerHTML = `<b class="text-danger"><i class="bi bi-x-circle"></i> ${json.erro || 'Pix não confirmado.'}</b>`;
+            btnPaguei.disabled = false;
+            btnPaguei.innerHTML = '<i class="bi bi-check-circle"></i> Já paguei (simular confirmação)';
+            return;
+        }
+        statusPagamento.innerHTML = '<b class="text-success"><i class="bi bi-check-circle"></i> Pix confirmado!</b>';
+        const pagamento = json.dados;
+        const dataAgendamento = document.getElementById('dataAgendamento').value;
+        const horaAgendamento = document.getElementById('horaAgendamento').value;
+        await criarAgendamento({
+            form, statusPagamento, btnSubmit,
+            dataAgendamento, horaAgendamento, metodoPagamento: 'pix', pagamento
+        });
+    } catch (erro) {
+        console.error('✗ Erro ao confirmar Pix:', erro);
+        statusPagamento.innerHTML = '<b class="text-danger"><i class="bi bi-x-circle"></i> Erro ao confirmar Pix.</b>';
+        btnPaguei.disabled = false;
+        btnPaguei.innerHTML = '<i class="bi bi-check-circle"></i> Já paguei (simular confirmação)';
+    }
+}
+
+async function criarAgendamento(ctx) {
+    const { form, statusPagamento, btnSubmit, dataAgendamento, horaAgendamento, metodoPagamento, pagamento } = ctx;
     const dadosAgendamento = {
         estabelecimento: estabelecimentoSelecionado.nome,
         data: dataAgendamento,
         hora: horaAgendamento,
-        pagamento: metodoPagamento
+        pagamento: metodoPagamento,
+        pagamentoId: pagamento ? pagamento.id : null
     };
 
-    try {
-        const resposta = await window.OndeTemAuth.api('/api/agendamentos', {
-            method: 'POST',
-            body: JSON.stringify(dadosAgendamento)
-        });
-
-        const resultado = await resposta.json().catch(() => ({}));
-
-        if (!resposta.ok) {
-            const msgErro = resultado.erro || `Erro ${resposta.status}`;
-            statusPagamento.innerHTML = `<b class="text-danger"><i class="bi bi-x-circle"></i> ${msgErro}</b>`;
-            setTimeout(() => {
-                btnSubmit.disabled = false;
-                btnSubmit.innerHTML = 'Confirmar e Pagar';
-            }, 2000);
-            return;
-        }
-
-        // Backup local para uso offline / histórico
-        const registroLocal = {
-            id: resultado.dados && resultado.dados.id ? resultado.dados.id : Date.now(),
-            estabelecimento: dadosAgendamento.estabelecimento,
-            estabelecimentoId: estabelecimentoSelecionado.id,
-            data: dadosAgendamento.data,
-            hora: dadosAgendamento.hora,
-            pagamento: dadosAgendamento.pagamento,
-            timestamp: new Date().toLocaleString('pt-BR'),
-            status: (resultado.dados && resultado.dados.status) || 'pendente'
-        };
-        const agendamentos = JSON.parse(localStorage.getItem(STORAGE_KEYS.agendamentos)) || [];
-        agendamentos.push(registroLocal);
-        localStorage.setItem(STORAGE_KEYS.agendamentos, JSON.stringify(agendamentos));
-
-        statusPagamento.innerHTML = '<b class="text-success"><i class="bi bi-check-circle"></i> Agendamento confirmado!</b>';
-
-        setTimeout(() => {
-            const modalElement = document.getElementById('modalAgendamento');
-            const bModal = bootstrap.Modal.getInstance(modalElement);
-            if (bModal) bModal.hide();
-            form.reset();
-            statusPagamento.innerHTML = '';
-            btnSubmit.disabled = false;
-            btnSubmit.innerHTML = 'Confirmar e Pagar';
-
-            if (typeof mostrarNotificacao === 'function') {
-                mostrarNotificacao(
-                    `Agendamento confirmado em ${registroLocal.estabelecimento}`,
-                    'success'
-                );
-            }
-
-            if (window.mostrarNotificacaoPush) {
-                const dataFormatada = typeof formatarData === 'function'
-                    ? formatarData(registroLocal.data)
-                    : registroLocal.data;
-                window.mostrarNotificacaoPush(
-                    'Agendamento Confirmado! ✅',
-                    `Sua reserva em ${registroLocal.estabelecimento} para o dia ${dataFormatada} às ${registroLocal.hora} foi realizada com sucesso.`
-                );
-            }
-
-            console.log('✓ Agendamento realizado:', registroLocal);
-        }, 1500);
-    } catch (erro) {
-        console.error('✗ Erro ao processar agendamento:', erro);
-        statusPagamento.innerHTML = '<b class="text-danger"><i class="bi bi-x-circle"></i> Erro de conexão. Verifique se o servidor está rodando.</b>';
-
-        setTimeout(() => {
-            btnSubmit.disabled = false;
-            btnSubmit.innerHTML = 'Confirmar e Pagar';
-        }, 2000);
+    const resposta = await window.OndeTemAuth.api('/api/agendamentos', {
+        method: 'POST',
+        body: JSON.stringify(dadosAgendamento)
+    });
+    const resultado = await resposta.json().catch(() => ({}));
+    if (!resposta.ok) {
+        const msgErro = resultado.erro || `Erro ${resposta.status}`;
+        statusPagamento.innerHTML = `<b class="text-danger"><i class="bi bi-x-circle"></i> ${msgErro}</b>`;
+        reabilitarBotao(btnSubmit);
+        return;
     }
+
+    const registroLocal = {
+        id: resultado.dados && resultado.dados.id ? resultado.dados.id : Date.now(),
+        estabelecimento: dadosAgendamento.estabelecimento,
+        estabelecimentoId: estabelecimentoSelecionado.id,
+        data: dadosAgendamento.data,
+        hora: dadosAgendamento.hora,
+        pagamento: dadosAgendamento.pagamento,
+        pagamentoId: dadosAgendamento.pagamentoId,
+        timestamp: new Date().toLocaleString('pt-BR'),
+        status: (resultado.dados && resultado.dados.status) || 'pendente'
+    };
+    const agendamentos = JSON.parse(localStorage.getItem(STORAGE_KEYS.agendamentos)) || [];
+    agendamentos.push(registroLocal);
+    localStorage.setItem(STORAGE_KEYS.agendamentos, JSON.stringify(agendamentos));
+
+    statusPagamento.innerHTML = '<b class="text-success"><i class="bi bi-check-circle"></i> Agendamento confirmado!</b>';
+
+    setTimeout(() => {
+        const modalElement = document.getElementById('modalAgendamento');
+        const bModal = bootstrap.Modal.getInstance(modalElement);
+        if (bModal) bModal.hide();
+        form.reset();
+        statusPagamento.innerHTML = '';
+        resetarBlocoPix();
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = 'Confirmar e Pagar';
+
+        if (typeof mostrarNotificacao === 'function') {
+            mostrarNotificacao(
+                `Agendamento confirmado em ${registroLocal.estabelecimento}`,
+                'success'
+            );
+        }
+        if (window.mostrarNotificacaoPush) {
+            const dataFormatada = typeof formatarData === 'function'
+                ? formatarData(registroLocal.data)
+                : registroLocal.data;
+            window.mostrarNotificacaoPush(
+                'Agendamento Confirmado!',
+                `Sua reserva em ${registroLocal.estabelecimento} para o dia ${dataFormatada} às ${registroLocal.hora} foi realizada com sucesso.`
+            );
+        }
+        console.log('✓ Agendamento realizado:', registroLocal);
+    }, 1500);
 }
 
 // ============================================
