@@ -20,6 +20,8 @@ if ('serviceWorker' in navigator) {
 let filtroAtivo = null;
 let mapaInstancia = null;
 let marcadoresEstabelecimentos = [];
+let marcadoresEmpresasCadastradas = [];
+let localizacaoUsuario = null;
 let estabelecimentoSelecionado = null;
 
 // ============================================
@@ -432,7 +434,8 @@ function inicializarMapa() {
     // Evento: Localização encontrada
     mapaInstancia.on('locationfound', function(e) {
         console.log('✓ Localização do usuário encontrada');
-        
+        localizacaoUsuario = e.latlng;
+
         // Marcador do usuário
         L.marker(e.latlng, {
             icon: L.icon({
@@ -446,7 +449,7 @@ function inicializarMapa() {
         }).addTo(mapaInstancia)
             .bindPopup("<b>Você está aqui!</b>")
             .openPopup();
-        
+
         // Círculo de precisão
         L.circle(e.latlng, e.accuracy, {
             color: '#2196F3',
@@ -455,20 +458,96 @@ function inicializarMapa() {
             weight: 2
         }).addTo(mapaInstancia);
 
-        // Adicionar marcadores dos estabelecimentos
+        // Adicionar marcadores dos estabelecimentos em destaque + empresas cadastradas
         adicionarMarcadoresEstabelecimentos();
+        carregarEmpresasCadastradas();
     });
 
     // Evento: Erro na localização
     mapaInstancia.on('locationerror', function(e) {
         console.warn('⚠ Localização não disponível. Usando Saquarema como padrão.');
-        
+
         // Fallback: Saquarema
         mapaInstancia.setView(MAPA_CONFIG.coordenada_padrao, MAPA_CONFIG.zoom);
-        
-        // Adicionar marcadores dos estabelecimentos
+
+        // Adicionar marcadores dos estabelecimentos em destaque + empresas cadastradas
         adicionarMarcadoresEstabelecimentos();
+        carregarEmpresasCadastradas();
     });
+}
+
+// Distância aproximada em km entre dois pontos (fórmula de Haversine)
+function distanciaKm(lat1, lng1, lat2, lng2) {
+    const toRad = v => v * Math.PI / 180;
+    const R = 6371;
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    const a = Math.sin(dLat / 2) ** 2
+        + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+function formatarDistancia(km) {
+    if (!Number.isFinite(km)) return '';
+    if (km < 1) return `${Math.round(km * 1000)} m`;
+    return `${km.toFixed(1)} km`;
+}
+
+async function carregarEmpresasCadastradas() {
+    try {
+        const resp = await fetch('/api/empresas/publicas');
+        if (!resp.ok) {
+            console.warn('⚠ Não foi possível carregar empresas cadastradas:', resp.status);
+            return;
+        }
+        const { empresas } = await resp.json();
+        if (!Array.isArray(empresas)) return;
+
+        // Remove marcadores anteriores (ex.: reload após novo cadastro)
+        marcadoresEmpresasCadastradas.forEach(m => m.remove());
+        marcadoresEmpresasCadastradas = [];
+
+        const icone = L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+
+        empresas.forEach(emp => {
+            if (typeof emp.lat !== 'number' || typeof emp.lng !== 'number') return;
+
+            let distanciaHtml = '';
+            if (localizacaoUsuario) {
+                const km = distanciaKm(localizacaoUsuario.lat, localizacaoUsuario.lng, emp.lat, emp.lng);
+                distanciaHtml = `<br><small><i class="bi bi-geo"></i> ${formatarDistancia(km)} de você</small>`;
+            }
+
+            const categorias = (emp.categorias || []).join(', ');
+            const telefone = emp.telefone ? `<br><small><i class="bi bi-telephone"></i> ${emp.telefone}</small>` : '';
+            const endereco = emp.endereco ? `<br><small>${emp.endereco}</small>` : '';
+
+            const marcador = L.marker([emp.lat, emp.lng], { icon: icone })
+                .addTo(mapaInstancia)
+                .bindPopup(`
+                    <div style="min-width: 200px;">
+                        <b style="color: #553A73;">${emp.nome}</b>
+                        ${categorias ? `<br><small>${categorias}</small>` : ''}
+                        ${endereco}
+                        ${telefone}
+                        ${distanciaHtml}
+                    </div>
+                `);
+
+            marcadoresEmpresasCadastradas.push(marcador);
+        });
+
+        console.log(`✓ ${marcadoresEmpresasCadastradas.length} empresa(s) cadastrada(s) exibida(s) no mapa.`);
+    } catch (erro) {
+        console.error('✗ Erro ao carregar empresas cadastradas:', erro);
+    }
 }
 
 function adicionarMarcadoresEstabelecimentos() {
