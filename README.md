@@ -8,11 +8,13 @@ PWA (Progressive Web App) em Node.js/Express para conectar clientes a salões, c
 - [Como rodar](#como-rodar)
 - [Credenciais de teste](#credenciais-de-teste)
 - [Páginas](#páginas)
+- [Home redesenhada (PR #11)](#home-redesenhada-pr-11)
 - [Fluxo de cadastro de empresa com localização no mapa](#fluxo-de-cadastro-de-empresa-com-localização-no-mapa)
 - [Mapa de empresas próximas (para usuários)](#mapa-de-empresas-próximas-para-usuários)
 - [Simulação de pagamento (cartão e Pix)](#simulação-de-pagamento-cartão-e-pix)
 - [API relevante](#api-relevante)
 - [Resultados dos testes E2E (T1–T8)](#resultados-dos-testes-e2e-t1t8)
+- [Resultados do teste E2E da home redesenhada (PR #11)](#resultados-do-teste-e2e-da-home-redesenhada-pr-11)
 - [Plano de testes](#plano-de-testes-cadastros--admin)
 
 ## Como rodar
@@ -37,6 +39,27 @@ npm start
 - **`/agendamentos`** — Lista de agendamentos do usuário logado (exige login como `usuario`).
 - **`/admin`** — Painel administrativo (exige `admin@ondetem.com`).
 - **`/painel-empresa`** — Painel da empresa logada.
+
+## Home redesenhada (PR #11)
+
+A home (`/`) foi redesenhada com a linguagem visual de clínicas de estética premium, inspirada em [mybeleza.com.br](https://www.mybeleza.com.br/) e [onodera.com.br](https://www.onodera.com.br/). Toda a funcionalidade (filtro de categorias, agendamento, login-gate, Pix/cartão, mapa, notificações) foi preservada.
+
+**Design system**
+- Tipografia: **Playfair Display** (títulos/display) + **Inter** (UI).
+- Paleta: roxo primário `#553A73`, roxo claro `#7D5AA0`, acento dourado `#C9A36B`, off-white (`#FAFAF7`, `#F5F1EC`).
+- Botões com gradiente (`.btn-primary-onde`), contorno (`.btn-outline-onde`) e ghost (`.btn-ghost`); compatibilidade mantida com `.btn-danger` nas demais páginas.
+- Service Worker cache bump: **v11 → v12 → v13** para invalidar CSS/JS antigos nos clientes.
+
+**Novas seções na home**
+- **Topbar** com "Encontre serviços de beleza perto de você" + atalhos para parceiro/suporte.
+- **Hero** bipartido: headline em Playfair ("Seu momento de beleza, *agendado em cliques.*"), lead, CTAs, checklist e galeria com dois cards flutuantes animados ("+10.000 agendamentos" e "4.9/5 avaliação").
+- **Stats bar** com 4 números de credibilidade (+500, +10k, 4.9/5, 24/7).
+- **Tratamentos em alta**: 6 cards populares com preço "a partir de".
+- **Como funciona**: 3 passos numerados (Descubra → Agende → Aproveite).
+- **CTA empresas**: box roxo com glow dourado e CTA em branco.
+- **Footer escuro**: 4 colunas (Empresa / Para você / Para seu negócio / redes sociais) + tag "Pagamento seguro • Pix e cartão".
+
+**Cards de salão evoluídos**: badge "Verificado", rating dourado em pill, distância com ícone, preços alinhados à direita e botão "Agendar" com ícone de calendário.
 
 ## Fluxo de cadastro de empresa com localização no mapa
 
@@ -175,6 +198,52 @@ Banner verde "Empresa cadastrada com sucesso! Sua conta está em análise. Redir
 ![T8 – marcador roxo na home](./docs/screenshots/t8-marcador-roxo.png)
 
 Popup do marcador roxo na home exibe: `Salão E2E Final` / `Cabelo` / `Rua Teste, 123 - Centro - Saquarema - RS - 28990-000` / `(22) 99999-0000` / `4656.5 km de você`.
+
+---
+
+## Resultados do teste E2E da home redesenhada (PR #11)
+
+Execução em `http://localhost:3000`, branch `devin/1776719299-home-redesign`, Chrome maximizado, gravação única com anotações. Plano em [`test-plan-redesign.md`](./test-plan-redesign.md) e relatório em [`test-report.md`](./test-report.md).
+
+**Regressão crítica coberta:** a redesign trocou `btn-danger` → `btn-primary-onde` e adicionou um `<i class="bi bi-calendar2-heart">` dentro do botão Agendar. O handler antigo em `script.js` fazia `e.target.classList.contains('btn-danger')`, que falhava tanto pela classe nova quanto por cliques caindo no `<i>` filho. O fix (commit `ef0f30a`) usa `e.target.closest('.card-salao .card-body .btn')`, resiliente a classes e children.
+
+| # | Asserção | Resultado |
+|---|----------|-----------|
+| A1 | Hero em Playfair com "agendado em cliques." + 2 cards flutuantes (+10.000, 4.9/5) | ✅ passed |
+| A2 | 4 `.stat` na stats bar | ✅ passed |
+| A3 | 6 `.treatment-card` em "Tratamentos em alta" | ✅ passed |
+| A4 | Footer com 3 `h6` (Empresa / Para você / Para seu negócio) | ✅ passed |
+| B1 | Filtro "Cabelo" esconde Clínica Flores e Espaço Glow | ✅ passed |
+| C1 | Clique em **Agendar** abre `#modalAgendamento` (valida fix do `btn-primary-onde`) | ✅ passed |
+| C2 | Pix gera `#pixCobranca` com QR + copia-e-cola + botão "Já paguei" | ✅ passed |
+| C3 | "Já paguei" confirma e exibe toast + notificação desktop | ✅ passed |
+| D1 | Mapa Leaflet carrega tiles OSM + marcador azul do usuário + marcador roxo da empresa | ✅ passed |
+
+### Evidências (prints)
+
+**C1 — Modal de agendamento abrindo (valida o fix crítico)**
+
+![PR #11 – modal de agendamento](./docs/screenshots/pr11-modal-agendamento.png)
+
+Clique em **Agendar** no card "Studio Bella Donna" (com a nova classe `.btn-primary-onde` e ícone filho) abre corretamente o `#modalAgendamento` com título "Agendar em: Studio Bella Donna".
+
+**C2 — Pix com QR Code gerado**
+
+![PR #11 – QR Code Pix](./docs/screenshots/pr11-pix-qrcode.png)
+
+Após o submit com forma de pagamento **Pix**, o bloco `#pixCobranca` aparece com QR Code, código copia-e-cola e botão "Já paguei (simular confirmação)".
+
+**C3 — Agendamento confirmado após "Já paguei"**
+
+![PR #11 – agendamento confirmado](./docs/screenshots/pr11-agendamento-confirmado.png)
+
+Ao clicar em "Já paguei", o toast verde "Agendamento confirmado em Studio Bella Donna" aparece e a notificação desktop nativa mostra a reserva para 25/12/2026 às 11:00.
+
+**D1 — Mapa com marcadores**
+
+![PR #11 – mapa com marcadores](./docs/screenshots/pr11-mapa-marcadores.png)
+
+Tiles do OpenStreetMap carregados, marcador azul "Você está aqui!" e marcador roxo da empresa cadastrada visíveis.
 
 ---
 
