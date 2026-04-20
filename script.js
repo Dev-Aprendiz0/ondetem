@@ -292,24 +292,30 @@ function preencherHorariosDisponiveis() {
 // pagamento confirmar na API.
 let pixCobrancaAtual = null;
 
+// Sincroniza a visibilidade dos blocos de cartão/Pix com o valor atual do
+// select de método de pagamento. É chamado tanto pelo evento `change` do
+// select quanto após `form.reset()` (que não dispara `change`).
+function sincronizarBlocoPagamento() {
+    const selectMetodo = document.getElementById('metodoPagamento');
+    const blocoCartao = document.getElementById('blocoCartao');
+    const blocoPix = document.getElementById('blocoPix');
+    if (!selectMetodo) return;
+    const metodo = selectMetodo.value;
+    if (blocoCartao) blocoCartao.hidden = metodo !== 'cartao';
+    if (blocoPix) blocoPix.hidden = metodo !== 'pix';
+    if (metodo !== 'pix') resetarBlocoPix();
+}
+
 function inicializarFormulario() {
     const form = document.getElementById('formAgendamento');
     const statusPagamento = document.getElementById('statusPagamento');
     const selectMetodo = document.getElementById('metodoPagamento');
-    const blocoCartao = document.getElementById('blocoCartao');
-    const blocoPix = document.getElementById('blocoPix');
 
-    // Troca entre blocos conforme método selecionado.
-    function atualizarBlocoPagamento() {
-        const metodo = selectMetodo.value;
-        if (blocoCartao) blocoCartao.hidden = metodo !== 'cartao';
-        if (blocoPix) blocoPix.hidden = metodo !== 'pix';
-        // Ao trocar para outro método, reseta qualquer cobrança Pix pendente.
-        if (metodo !== 'pix') resetarBlocoPix();
+    selectMetodo.addEventListener('change', () => {
+        sincronizarBlocoPagamento();
         statusPagamento.innerHTML = '';
-    }
-    selectMetodo.addEventListener('change', atualizarBlocoPagamento);
-    atualizarBlocoPagamento();
+    });
+    sincronizarBlocoPagamento();
 
     // Máscaras dos campos de cartão (estética; o servidor é quem valida).
     const inputNumero = document.getElementById('cartaoNumero');
@@ -582,7 +588,10 @@ async function criarAgendamento(ctx) {
         if (bModal) bModal.hide();
         form.reset();
         statusPagamento.innerHTML = '';
-        resetarBlocoPix();
+        // form.reset() não dispara o evento 'change' do select, então a
+        // sincronização dos blocos precisa ser feita manualmente, senão o
+        // bloco de cartão/Pix do fluxo anterior pode continuar visível.
+        sincronizarBlocoPagamento();
         btnSubmit.disabled = false;
         btnSubmit.innerHTML = 'Confirmar e Pagar';
 
