@@ -588,9 +588,12 @@ async function criarAgendamento(ctx) {
         if (bModal) bModal.hide();
         form.reset();
         statusPagamento.innerHTML = '';
-        // form.reset() não dispara o evento 'change' do select, então a
-        // sincronização dos blocos precisa ser feita manualmente, senão o
-        // bloco de cartão/Pix do fluxo anterior pode continuar visível.
+        // form.reset() não dispara 'change' no select e volta para a opção
+        // padrão "pix", então precisamos limpar a cobrança Pix do fluxo
+        // anterior explicitamente (senão o QR code e o botão "Já paguei"
+        // da cobrança antiga continuariam visíveis) e só depois sincronizar
+        // a visibilidade dos blocos.
+        resetarBlocoPix();
         sincronizarBlocoPagamento();
         btnSubmit.disabled = false;
         btnSubmit.innerHTML = 'Confirmar e Pagar';
