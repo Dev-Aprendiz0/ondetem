@@ -205,10 +205,10 @@ function inicializarModal() {
     const modalElement = document.getElementById('modalAgendamento');
     const bModal = new bootstrap.Modal(modalElement);
 
-    // Delegação de evento para botões "Agendar"
+    // Delegação de evento para botões "Agendar" (dentro de cards de salão)
     document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('btn-danger') && e.target.closest('.card-body')) {
-            const btn = e.target;
+        const btn = e.target.closest('.card-salao .card-body .btn');
+        if (btn) {
             const cardBody = btn.closest('.card-body');
             const nomeLocal = cardBody.querySelector('.card-title').innerText;
             const indexCard = Array.from(document.querySelectorAll('.listings .row > div')).findIndex(
