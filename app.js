@@ -122,3 +122,7 @@ function mostrarNotificacaoLocal(titulo, corpo) {
         console.warn('⚠ Falha ao exibir notificação local:', err);
     }
 }
+
+// Exposto no window para que script.js possa disparar a notificação de
+// "Agendamento Confirmado!" após um agendamento bem-sucedido.
+window.mostrarNotificacaoPush = mostrarNotificacaoLocal;
