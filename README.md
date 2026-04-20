@@ -12,6 +12,7 @@ PWA (Progressive Web App) em Node.js/Express para conectar clientes a salões, c
 - [Mapa de empresas próximas (para usuários)](#mapa-de-empresas-próximas-para-usuários)
 - [Simulação de pagamento (cartão e Pix)](#simulação-de-pagamento-cartão-e-pix)
 - [API relevante](#api-relevante)
+- [Resultados dos testes E2E (T1–T8)](#resultados-dos-testes-e2e-t1t8)
 - [Plano de testes](#plano-de-testes-cadastros--admin)
 
 ## Como rodar
@@ -133,6 +134,47 @@ No modal de agendamento da home, ao escolher **Cartão de Crédito** aparece um 
 | POST   | `/api/pagamentos/pix/:id/confirmar`          | **Simula** confirmação do Pix (status `aguardando` → `aprovado`).          |
 | GET    | `/api/pagamentos`                            | Lista pagamentos do usuário logado (admin vê todos).                       |
 | GET    | `/api/pagamentos/:id`                        | Consulta status de um pagamento específico.                                |
+
+---
+
+## Resultados dos testes E2E (T1–T8)
+
+Última execução: **20/04/2026**, em `http://localhost:3000` (servidor Express local), Chrome maximizado, gravação única com anotações por teste. O plano completo está em [`test-plan.md`](./test-plan.md) e o relatório detalhado em [`test-report.md`](./test-report.md).
+
+🎥 **Vídeo da execução completa:** https://app.devin.ai/attachments/eaab7858-39f8-4fce-9635-c07bb56667c8/rec-4a6081d5-1cbc-41f6-959f-e63eee4c36b2-edited.mp4
+
+| # | Teste | Fix/feature | Resultado |
+|---|-------|-------------|-----------|
+| T1 | Prompt nativo de notificação aparece sozinho ao abrir `/` (sem botão 🔔 no header) | PR #8 / #9 | ✅ passed |
+| T2 | Agendar sem login abre modal "Login necessário" (`href=login.html?redirect=%2F`) | PR #3 | ✅ passed |
+| T3 | Login válido `joao@email.com` volta para home sem "Erro de conexão" | PR #3 | ✅ passed |
+| T4 | Pix: QR + "copia e cola" + "Já paguei" → notificação "Agendamento Confirmado!" | PR #6 / #9 | ✅ passed |
+| T5 | Reabrir modal após Pix: `#pixCobranca` resetado, sem QR antigo | PR #7 | ✅ passed |
+| T6 | Cartão `4111 1111 1111 1111` aprovado + notificação | PR #6 / #9 | ✅ passed |
+| T7 | Cadastro de empresa bloqueado sem mapa; lat/lng com 6 decimais após clique; cadastro OK | PR #5 | ✅ passed |
+| T8 | Marcador roxo da empresa recém-criada na home (popup com nome, endereço, telefone e "de você") | PR #5 | ✅ passed |
+
+> **Observação (não é bug):** o Chrome da VM de teste retorna uma geolocalização mock nos EUA, então a distância exibida no popup do marcador roxo aparece grande (~4656 km). Para um usuário real em Saquarema o cálculo Haversine produz metros/poucos km — o formato (`N m` / `N.N km` + " de você") e os dígitos estão corretos.
+
+### Evidências (prints)
+
+**T7 — Lat/Lng com 6 casas decimais após clicar no mapa**
+
+![T7 – mapa com lat/lng preenchidos](./docs/screenshots/t7-mapa-lat-lng.png)
+
+Após clicar no mapa, `Latitude = 17.371610` e `Longitude = -68.906250` são preenchidos automaticamente (bate com `^-?\d{1,3}\.\d{6}$`) e o status vermelho "Marque a localização da empresa no mapa antes de cadastrar." é substituído por "Localização marcada: 17.371610, -68.906250".
+
+**T7 — Cadastro de empresa concluído com sucesso**
+
+![T7 – banner de cadastro OK](./docs/screenshots/t7-cadastro-sucesso.png)
+
+Banner verde "Empresa cadastrada com sucesso! Sua conta está em análise. Redirecionando..." é exibido e o formulário é resetado antes do redirect para `/login.html`.
+
+**T8 — Marcador roxo da nova empresa na home**
+
+![T8 – marcador roxo na home](./docs/screenshots/t8-marcador-roxo.png)
+
+Popup do marcador roxo na home exibe: `Salão E2E Final` / `Cabelo` / `Rua Teste, 123 - Centro - Saquarema - RS - 28990-000` / `(22) 99999-0000` / `4656.5 km de você`.
 
 ---
 
