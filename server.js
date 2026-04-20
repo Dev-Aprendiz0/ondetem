@@ -254,20 +254,35 @@ function limparPagamentoParaResposta(p) {
     return publico;
 }
 
-// Usuário lista os próprios pagamentos; empresa/admin veem todos.
-app.get('/api/pagamentos', autenticar, (req, res) => {
-    let lista = db.pagamentos;
-    if (req.usuario.tipo === 'usuario') {
-        lista = lista.filter(p => p.usuarioEmail === req.usuario.email);
+// Lista pagamentos. Usuário só vê os próprios. Admin vê todos. Empresa só vê
+// os pagamentos associados a agendamentos dela (via pagamentoId no agendamento),
+// o que evita expor pagamentos de clientes de outras empresas.
+function pagamentosVisiveisPara(usuario) {
+    if (usuario.tipo === 'admin') return db.pagamentos.slice();
+    if (usuario.tipo === 'usuario') {
+        return db.pagamentos.filter(p => p.usuarioEmail === usuario.email);
     }
-    const saida = lista.map(limparPagamentoParaResposta);
+    if (usuario.tipo === 'empresa') {
+        const idsDaEmpresa = new Set(
+            db.agendamentos
+                .filter(a => a.empresaId === usuario.id && a.pagamentoId)
+                .map(a => a.pagamentoId)
+        );
+        return db.pagamentos.filter(p => idsDaEmpresa.has(p.id));
+    }
+    return [];
+}
+
+app.get('/api/pagamentos', autenticar, (req, res) => {
+    const saida = pagamentosVisiveisPara(req.usuario).map(limparPagamentoParaResposta);
     res.json({ status: 'sucesso', dados: saida });
 });
 
 app.get('/api/pagamentos/:id', autenticar, (req, res) => {
     const p = db.pagamentos.find(x => x.id === req.params.id);
     if (!p) return res.status(404).json({ erro: 'Pagamento não encontrado.' });
-    if (req.usuario.tipo === 'usuario' && p.usuarioEmail !== req.usuario.email) {
+    const permitido = pagamentosVisiveisPara(req.usuario).some(x => x.id === p.id);
+    if (!permitido) {
         return res.status(403).json({ erro: 'Este pagamento não pertence a você.' });
     }
     res.json({ status: 'sucesso', dados: limparPagamentoParaResposta(p) });
