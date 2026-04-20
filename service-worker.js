@@ -3,8 +3,8 @@
  * Implementação baseada na Aula 6 - Engenharia de Software
  */
 
-const CACHE_NAME = 'ondetem-cache-v3';
-const RUNTIME_CACHE = 'ondetem-runtime-v3';
+const CACHE_NAME = 'ondetem-cache-v4';
+const RUNTIME_CACHE = 'ondetem-runtime-v4';
 
 // Arquivos essenciais para funcionar offline
 const urlsToCache = [
@@ -69,31 +69,54 @@ self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
 
+  // Não interceptar métodos diferentes de GET (POST/PUT/DELETE de login,
+  // agendamentos, etc. precisam ir direto ao servidor)
   if (request.method !== 'GET') return;
 
+  // Nunca cachear a API — sempre vai para a rede
+  if (url.origin === self.location.origin && url.pathname.startsWith('/api/')) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  const isHtml = request.mode === 'navigate' ||
+    (request.headers.get('accept') || '').includes('text/html');
+
   if (url.origin === self.location.origin) {
-    event.respondWith(
-      caches.match(request).then(response => {
-        if (response) return response;
-        return fetch(request).then(response => {
-          if (!response || response.status !== 200 || response.type === 'error') return response;
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(request, responseToCache));
-          return response;
-        }).catch(() => caches.match(request));
-      })
-    );
+    // Network-first para HTML/JS/CSS do próprio site: garante que correções de bugs
+    // cheguem ao usuário sem ficar presas em cache antigo. Fallback para cache offline.
+    const estrategia = isHtml ? networkFirst : staleWhileRevalidate;
+    event.respondWith(estrategia(request, CACHE_NAME));
   } else {
-    event.respondWith(
-      fetch(request).then(response => {
-        if (!response || response.status !== 200) return response;
-        const responseToCache = response.clone();
-        caches.open(RUNTIME_CACHE).then(cache => cache.put(request, responseToCache));
-        return response;
-      }).catch(() => caches.match(request))
-    );
+    // Recursos externos (CDNs) — cache-first com atualização em background
+    event.respondWith(staleWhileRevalidate(request, RUNTIME_CACHE));
   }
 });
+
+function networkFirst(request, cacheName) {
+  return fetch(request)
+    .then(response => {
+      if (response && response.status === 200 && response.type !== 'error') {
+        const clone = response.clone();
+        caches.open(cacheName).then(cache => cache.put(request, clone));
+      }
+      return response;
+    })
+    .catch(() => caches.match(request));
+}
+
+function staleWhileRevalidate(request, cacheName) {
+  return caches.match(request).then(cached => {
+    const fetchPromise = fetch(request).then(response => {
+      if (response && response.status === 200 && response.type !== 'error') {
+        const clone = response.clone();
+        caches.open(cacheName).then(cache => cache.put(request, clone));
+      }
+      return response;
+    }).catch(() => cached);
+    return cached || fetchPromise;
+  });
+}
 
 // ============================================
 // EVENTOS DE NOTIFICAÇÃO PUSH (AULA 6)

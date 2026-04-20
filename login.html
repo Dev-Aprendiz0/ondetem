@@ -79,17 +79,39 @@ function destinoPorTipo(tipo){
 async function fazerLogin(){
   const email=loginEmail.value.trim(), senha=loginSenha.value;
   if(!email||!senha){mostrarErro('Preencha o e-mail e a senha.');return;}
+  if(!window.OndeTemAuth){
+    mostrarErro('Falha ao carregar módulo de autenticação. Recarregue a página (Ctrl+Shift+R).');
+    return;
+  }
+  if(!location.protocol.startsWith('http')){
+    mostrarErro('Abra a página via http://localhost:3000/login — o login só funciona com o servidor rodando.');
+    return;
+  }
   btnLogin.disabled=true; btnLogin.textContent='Entrando...'; esconderErro();
+  let resposta;
   try{
-    const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},
+    resposta = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({email,senha,tipo:tipoSelecionado})});
-    const data=await r.json();
-    if(r.ok){
+  }catch(erroRede){
+    console.error('[login] falha de rede:', erroRede);
+    mostrarErro('Erro de conexão. Verifique se o servidor está rodando em http://localhost:3000.');
+    btnLogin.disabled=false; btnLogin.textContent='Login | Acessar';
+    return;
+  }
+  try{
+    const data = await resposta.json();
+    if(resposta.ok){
       OndeTemAuth.salvarSessao(data.token, data.usuario);
       window.location.href = destinoPorTipo(data.usuario.tipo);
-    } else mostrarErro(data.erro || 'E-mail ou senha incorretos.');
-  }catch{ mostrarErro('Erro de conexão. Verifique se o servidor está rodando.'); }
-  finally{ btnLogin.disabled=false; btnLogin.textContent='Login | Acessar'; }
+      return;
+    }
+    mostrarErro(data.erro || 'E-mail ou senha incorretos.');
+  }catch(erroParse){
+    console.error('[login] resposta inválida do servidor:', erroParse);
+    mostrarErro('Resposta inválida do servidor (status ' + resposta.status + '). Tente novamente.');
+  }finally{
+    btnLogin.disabled=false; btnLogin.textContent='Login | Acessar';
+  }
 }
 function mostrarErro(m){loginErro.textContent=m;loginErro.classList.add('show');}
 function esconderErro(){loginErro.classList.remove('show');}
