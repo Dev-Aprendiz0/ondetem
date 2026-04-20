@@ -28,6 +28,9 @@ const db = {
             senha: '123456',
             telefone: '(11) 99999-0000',
             endereco: 'Rua das Flores, 123 - Centro',
+            lat: -22.9340,
+            lng: -42.5010,
+            categorias: ['Cabelo', 'Unhas'],
             horario: 'Seg a Sex 09h-19h | Sáb 09h-15h',
             status: 'ativo',
             tipo: 'empresa'
@@ -265,20 +268,89 @@ app.post('/api/usuarios', (req, res) => {
 
 app.get('/api/empresas', (req, res) => res.json({ status: 'sucesso', empresas: db.empresas.map(({ senha, ...e }) => e) }));
 
+// Lista pública para o mapa de clientes: apenas empresas com coordenadas válidas.
+// Retorna somente campos seguros (sem senha, sem dados internos sensíveis).
+app.get('/api/empresas/publicas', (req, res) => {
+    const publicas = db.empresas
+        .filter(e => e.status !== 'rejeitado'
+            && typeof e.lat === 'number' && typeof e.lng === 'number'
+            && Number.isFinite(e.lat) && Number.isFinite(e.lng))
+        .map(e => ({
+            id: e.id,
+            nome: e.nome,
+            nomeFantasia: e.nomeFantasia || null,
+            descricao: e.descricao || '',
+            categorias: e.categorias || [],
+            servicos: e.servicos || [],
+            telefone: e.telefone || '',
+            whatsapp: e.whatsapp || '',
+            instagram: e.instagram || '',
+            endereco: e.endereco || '',
+            lat: e.lat,
+            lng: e.lng,
+            horarioFuncionamento: e.horarioFuncionamento || null,
+            status: e.status
+        }));
+    res.json({ status: 'sucesso', empresas: publicas });
+});
+
 app.post('/api/empresas', (req, res) => {
-    const { nome, cnpj, razaoSocial, email, senha } = req.body;
+    const {
+        nome, cnpj, razaoSocial, nomeFantasia, descricao,
+        email, senha, telefone, whatsapp, instagram,
+        endereco, lat, lng, categorias, servicos,
+        horarioFuncionamento, responsavel
+    } = req.body;
+
     if (!nome || !cnpj || !razaoSocial || !email || !senha) {
         return res.status(400).json({ erro: 'Preencha todos os campos obrigatórios.' });
     }
-    if (db.empresas.find(e => e.email === email)) return res.status(409).json({ erro: 'E-mail já cadastrado.' });
+
+    // Localização no mapa é obrigatória: é o que permite mostrar a empresa
+    // para usuários que buscam serviços próximos.
+    const latNum = parseFloat(lat);
+    const lngNum = parseFloat(lng);
+    if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)
+        || latNum < -90 || latNum > 90 || lngNum < -180 || lngNum > 180) {
+        return res.status(400).json({ erro: 'Informe a localização da empresa no mapa (latitude/longitude válidas).' });
+    }
+
+    if (db.empresas.find(e => e.email === email)) {
+        return res.status(409).json({ erro: 'E-mail já cadastrado.' });
+    }
+
+    const enderecoTexto = endereco && typeof endereco === 'object'
+        ? [
+            [endereco.rua, endereco.numero].filter(Boolean).join(', '),
+            endereco.complemento, endereco.bairro, endereco.cidade, endereco.estado, endereco.cep
+          ].filter(Boolean).join(' - ')
+        : (typeof endereco === 'string' ? endereco : '');
+
     const novo = {
-        id: Date.now(), nome, cnpj, razaoSocial, email, senha,
-        telefone: '', endereco: '', horario: '',
-        status: 'pendente', tipo: 'empresa'
+        id: Date.now(),
+        nome, cnpj, razaoSocial,
+        nomeFantasia: nomeFantasia || '',
+        descricao: descricao || '',
+        email, senha,
+        telefone: telefone || '',
+        whatsapp: whatsapp || '',
+        instagram: instagram || '',
+        endereco: enderecoTexto,
+        enderecoEstruturado: endereco && typeof endereco === 'object' ? endereco : null,
+        lat: latNum,
+        lng: lngNum,
+        categorias: Array.isArray(categorias) ? categorias : [],
+        servicos: Array.isArray(servicos) ? servicos : [],
+        horarioFuncionamento: horarioFuncionamento || null,
+        responsavel: responsavel || '',
+        horario: '',
+        status: 'ativo',
+        tipo: 'empresa'
     };
     db.empresas.push(novo);
+
     const { senha: _, ...publico } = novo;
-    res.status(201).json({ mensagem: 'Empresa cadastrada com sucesso! Aguardando aprovação do administrador.', dados: publico });
+    res.status(201).json({ mensagem: 'Empresa cadastrada com sucesso!', dados: publico });
 });
 
 // ==========================================

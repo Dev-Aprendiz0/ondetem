@@ -10,6 +10,8 @@
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#553A73">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
     body {
@@ -196,6 +198,44 @@
       border-radius: 10px;
       padding: 15px 20px;
       animation: slideIn 0.3s ease;
+    }
+
+    #mapaCadastroEmpresa {
+      width: 100%;
+      height: 380px;
+      border-radius: 12px;
+      border: 2px solid #e0e0e0;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .map-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .map-status {
+      font-size: 0.9rem;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: #f8f9fa;
+      border: 1px solid #e0e0e0;
+      color: #555;
+      margin-top: 10px;
+    }
+
+    .map-status.ok {
+      background: #e8f5e9;
+      border-color: #a5d6a7;
+      color: #1b5e20;
+    }
+
+    .map-status.err {
+      background: #fdecea;
+      border-color: #f5c2bd;
+      color: #a0241d;
     }
 
     @media (max-width: 768px) {
@@ -459,6 +499,45 @@
             </div>
           </div>
 
+          <!-- Localização no Mapa (obrigatório) -->
+          <div class="cadastro-card">
+            <h3 class="section-title">
+              <i class="bi bi-geo-alt-fill"></i> Localização no Mapa *
+            </h3>
+            <p class="text-muted mb-3">
+              Marque o ponto exato do seu estabelecimento no mapa. Essa localização será usada para
+              mostrar sua empresa para clientes que buscam serviços próximos a eles.
+            </p>
+
+            <div class="map-toolbar">
+              <button type="button" class="btn btn-outline-primary btn-sm" id="btnUsarMinhaLocalizacao">
+                <i class="bi bi-crosshair"></i> Usar minha localização
+              </button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="btnBuscarEndereco">
+                <i class="bi bi-search"></i> Buscar pelo endereço preenchido
+              </button>
+            </div>
+
+            <div id="mapaCadastroEmpresa" aria-label="Mapa para marcar a localização da empresa"></div>
+
+            <div class="row g-3 mt-1">
+              <div class="col-md-6">
+                <label class="form-label" for="latEmpresa">Latitude</label>
+                <input type="text" class="form-control" id="latEmpresa" readonly placeholder="Marque no mapa" required>
+                <div class="invalid-feedback">Marque a localização no mapa.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="lngEmpresa">Longitude</label>
+                <input type="text" class="form-control" id="lngEmpresa" readonly placeholder="Marque no mapa" required>
+              </div>
+            </div>
+
+            <div id="mapaStatus" class="map-status">
+              <i class="bi bi-info-circle"></i>
+              Clique no mapa, arraste o marcador, ou use um dos botões acima para definir o ponto.
+            </div>
+          </div>
+
           <!-- Horário de Funcionamento -->
           <div class="cadastro-card">
             <h3 class="section-title">
@@ -606,10 +685,16 @@
   <script>
     let contadorServicos = 1;
 
+    // Ponto padrão (Saquarema) caso o navegador não conceda geolocalização
+    const PONTO_PADRAO = [-22.9345, -42.4951];
+    let mapaEmpresa = null;
+    let marcadorEmpresa = null;
+
     document.addEventListener('DOMContentLoaded', () => {
       inicializarMascarasEmpresa();
       inicializarServicos();
       inicializarHorarios();
+      inicializarMapaEmpresa();
       inicializarFormularioEmpresa();
     });
 
@@ -650,7 +735,7 @@
         e.target.value = value;
       });
 
-      // Buscar endereço pelo CEP
+      // Buscar endereço pelo CEP e, quando possível, centralizar o mapa na região
       cepInput.addEventListener('blur', async (e) => {
         const cep = e.target.value.replace(/\D/g, '');
         if (cep.length === 8) {
@@ -662,12 +747,130 @@
               document.getElementById('bairroEmpresa').value = data.bairro || '';
               document.getElementById('cidadeEmpresa').value = data.localidade || '';
               document.getElementById('estadoEmpresa').value = data.uf || '';
+              // Só sugere localização no mapa se o usuário ainda não marcou um ponto
+              if (!marcadorEmpresa) {
+                geocodificarEnderecoAtual({ silencioso: true });
+              }
             }
           } catch (erro) {
             console.error('Erro ao buscar CEP:', erro);
           }
         }
       });
+    }
+
+    // ====================================================================
+    // Mapa: seleção da localização da empresa
+    // ====================================================================
+    function inicializarMapaEmpresa() {
+      mapaEmpresa = L.map('mapaCadastroEmpresa').setView(PONTO_PADRAO, 13);
+
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19
+      }).addTo(mapaEmpresa);
+
+      // Clicar no mapa define/move o marcador
+      mapaEmpresa.on('click', (e) => definirMarcador(e.latlng.lat, e.latlng.lng));
+
+      document.getElementById('btnUsarMinhaLocalizacao').addEventListener('click', usarMinhaLocalizacao);
+      document.getElementById('btnBuscarEndereco').addEventListener('click', () => geocodificarEnderecoAtual({ silencioso: false }));
+
+      // Leaflet precisa de invalidateSize quando o container nasce escondido / em scroll
+      setTimeout(() => mapaEmpresa.invalidateSize(), 250);
+    }
+
+    function definirMarcador(lat, lng, { centralizar = true, zoom = 17 } = {}) {
+      const ponto = [lat, lng];
+      if (!marcadorEmpresa) {
+        marcadorEmpresa = L.marker(ponto, { draggable: true })
+          .addTo(mapaEmpresa)
+          .bindPopup('<b>Localização da empresa</b><br><small>Arraste para ajustar.</small>')
+          .openPopup();
+        marcadorEmpresa.on('dragend', (ev) => {
+          const p = ev.target.getLatLng();
+          atualizarCamposLatLng(p.lat, p.lng);
+        });
+      } else {
+        marcadorEmpresa.setLatLng(ponto);
+      }
+      if (centralizar) {
+        mapaEmpresa.setView(ponto, zoom);
+      }
+      atualizarCamposLatLng(lat, lng);
+    }
+
+    function atualizarCamposLatLng(lat, lng) {
+      const latInput = document.getElementById('latEmpresa');
+      const lngInput = document.getElementById('lngEmpresa');
+      latInput.value = Number(lat).toFixed(6);
+      lngInput.value = Number(lng).toFixed(6);
+      latInput.setCustomValidity('');
+      definirMapaStatus('ok', `<i class="bi bi-check-circle-fill"></i> Localização marcada: ${latInput.value}, ${lngInput.value}`);
+    }
+
+    function definirMapaStatus(tipo, html) {
+      const el = document.getElementById('mapaStatus');
+      el.className = 'map-status' + (tipo ? ' ' + tipo : '');
+      el.innerHTML = html;
+    }
+
+    function usarMinhaLocalizacao() {
+      if (!navigator.geolocation) {
+        definirMapaStatus('err', '<i class="bi bi-exclamation-triangle"></i> Seu navegador não suporta geolocalização.');
+        return;
+      }
+      definirMapaStatus('', '<i class="bi bi-arrow-repeat"></i> Obtendo sua localização...');
+      navigator.geolocation.getCurrentPosition(
+        (pos) => definirMarcador(pos.coords.latitude, pos.coords.longitude),
+        (err) => {
+          console.warn('Falha ao obter geolocalização:', err);
+          definirMapaStatus('err', '<i class="bi bi-exclamation-triangle"></i> Não foi possível obter sua localização. Clique no mapa para marcar manualmente.');
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    }
+
+    async function geocodificarEnderecoAtual({ silencioso } = {}) {
+      const rua = document.getElementById('ruaEmpresa').value.trim();
+      const numero = document.getElementById('numeroEmpresa').value.trim();
+      const bairro = document.getElementById('bairroEmpresa').value.trim();
+      const cidade = document.getElementById('cidadeEmpresa').value.trim();
+      const estado = document.getElementById('estadoEmpresa').value.trim();
+      const cep = document.getElementById('cepEmpresa').value.trim();
+
+      if (!cidade && !cep) {
+        if (!silencioso) {
+          definirMapaStatus('err', '<i class="bi bi-exclamation-triangle"></i> Preencha pelo menos cidade ou CEP antes de buscar pelo endereço.');
+        }
+        return;
+      }
+
+      const partes = [ [rua, numero].filter(Boolean).join(', '), bairro, cidade, estado, cep, 'Brasil' ]
+        .filter(Boolean).join(', ');
+
+      if (!silencioso) {
+        definirMapaStatus('', `<i class="bi bi-arrow-repeat"></i> Buscando "${partes}"...`);
+      }
+
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=${encodeURIComponent(partes)}`;
+        const resp = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } });
+        const resultados = await resp.json();
+        if (!Array.isArray(resultados) || resultados.length === 0) {
+          if (!silencioso) {
+            definirMapaStatus('err', '<i class="bi bi-exclamation-triangle"></i> Endereço não encontrado. Clique no mapa para marcar manualmente.');
+          }
+          return;
+        }
+        const { lat, lon } = resultados[0];
+        definirMarcador(parseFloat(lat), parseFloat(lon));
+      } catch (erro) {
+        console.error('Falha na geocodificação:', erro);
+        if (!silencioso) {
+          definirMapaStatus('err', '<i class="bi bi-exclamation-triangle"></i> Falha ao buscar o endereço. Marque manualmente no mapa.');
+        }
+      }
     }
 
     // Gerenciar serviços dinâmicos
@@ -739,6 +942,21 @@
           categoriasFeedback.classList.add('d-none');
         }
 
+        // Validar localização no mapa
+        const latInput = document.getElementById('latEmpresa');
+        const lngInput = document.getElementById('lngEmpresa');
+        const latVal = parseFloat(latInput.value);
+        const lngVal = parseFloat(lngInput.value);
+        if (!marcadorEmpresa || Number.isNaN(latVal) || Number.isNaN(lngVal)) {
+          latInput.setCustomValidity('Marque a localização da empresa no mapa.');
+          definirMapaStatus('err', '<i class="bi bi-exclamation-triangle"></i> Marque a localização da empresa no mapa antes de cadastrar.');
+          form.classList.add('was-validated');
+          document.getElementById('mapaCadastroEmpresa').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        } else {
+          latInput.setCustomValidity('');
+        }
+
         // Validar senhas
         const senha = document.getElementById('senhaEmpresa').value;
         const confirmarSenha = document.getElementById('confirmarSenhaEmpresa').value;
@@ -795,6 +1013,8 @@
             cidade: document.getElementById('cidadeEmpresa').value,
             estado: document.getElementById('estadoEmpresa').value
           },
+          lat: parseFloat(document.getElementById('latEmpresa').value),
+          lng: parseFloat(document.getElementById('lngEmpresa').value),
           horarioFuncionamento,
           responsavel: document.getElementById('nomeResponsavel').value,
           senha: document.getElementById('senhaEmpresa').value,
