@@ -42,6 +42,7 @@ const db = {
         { id: 1, empresaId: 1, nome: 'Corte de cabelo feminino', preco: 60, duracao: 45 },
         { id: 2, empresaId: 1, nome: 'Manicure', preco: 35, duracao: 40 }
     ],
+    pagamentos: [],     // { id, usuarioEmail, metodo, valor, status, ... }
     sessoes: new Map() // token -> { email, tipo, id }
 };
 
@@ -144,7 +145,7 @@ app.get('/api/agendamentos', autenticar, (req, res) => {
 
 // Apenas usuários logados podem agendar
 app.post('/api/agendamentos', autenticar, exigirTipo('usuario'), (req, res) => {
-    const { empresaId, servicoId, estabelecimento, data, hora, pagamento } = req.body;
+    const { empresaId, servicoId, estabelecimento, data, hora, pagamento, pagamentoId } = req.body;
     if (!data || !hora || (!estabelecimento && !empresaId)) {
         return res.status(400).json({ erro: 'Dados incompletos para o agendamento.' });
     }
@@ -155,7 +156,9 @@ app.post('/api/agendamentos', autenticar, exigirTipo('usuario'), (req, res) => {
         empresaId: empresaId || null,
         servicoId: servicoId || null,
         estabelecimento: estabelecimento || (db.empresas.find(e => e.id === empresaId)?.nome ?? ''),
-        data, hora, pagamento: pagamento || 'A combinar',
+        data, hora,
+        pagamento: pagamento || 'A combinar',
+        pagamentoId: pagamentoId || null,
         status: 'pendente',
         criadoEm: new Date().toISOString()
     };
@@ -176,6 +179,210 @@ app.patch('/api/agendamentos/:id', autenticar, exigirTipo('empresa', 'admin'), (
     }
     ag.status = status;
     res.json({ mensagem: 'Status atualizado', dados: ag });
+});
+
+// ==========================================
+// 3b. API — PAGAMENTOS (simulação: cartão de crédito e Pix)
+// ==========================================
+//
+// ATENÇÃO: este endpoint é uma SIMULAÇÃO. Não integra com gateway real
+// (Stripe, Pagar.me, Mercado Pago etc.) e não deve ser usado em produção
+// com dados reais de cartão. Serve para permitir que o fluxo de agendamento
+// seja testado de ponta a ponta com feedback realista (aprovado / recusado /
+// aguardando) antes de uma integração real.
+//
+// Contas / números de teste:
+//  - Cartão que APROVA:   qualquer número que passe no Luhn e NÃO termine em "0000"
+//                         (ex.: 4111 1111 1111 1111)
+//  - Cartão que RECUSA:   passa no Luhn mas termina em "0000"
+//                         (ex.: 4242 4242 4242 0000) -> simula "fundos insuficientes"
+//  - Pix:                 cria cobrança com status "aguardando" e devolve um
+//                         "copia e cola" aleatório. Para simular a confirmação
+//                         do pagamento, chame POST /api/pagamentos/pix/:id/confirmar.
+
+// Valida número de cartão de crédito pelo algoritmo de Luhn.
+function cartaoPassaLuhn(numero) {
+    const digitos = String(numero || '').replace(/\D/g, '');
+    if (digitos.length < 13 || digitos.length > 19) return false;
+    let soma = 0;
+    let alt = false;
+    for (let i = digitos.length - 1; i >= 0; i--) {
+        let n = parseInt(digitos[i], 10);
+        if (alt) {
+            n *= 2;
+            if (n > 9) n -= 9;
+        }
+        soma += n;
+        alt = !alt;
+    }
+    return soma % 10 === 0;
+}
+
+// Verifica se MM/AA (ou MM/AAAA) está no futuro. Aceita também "MMAA".
+function validadeFutura(validade) {
+    const s = String(validade || '').replace(/\s/g, '');
+    const m = s.match(/^(\d{2})\s*\/?\s*(\d{2}|\d{4})$/);
+    if (!m) return false;
+    const mes = parseInt(m[1], 10);
+    let ano = parseInt(m[2], 10);
+    if (mes < 1 || mes > 12) return false;
+    if (m[2].length === 2) ano += 2000;
+    const agora = new Date();
+    const fimDoMes = new Date(ano, mes, 0, 23, 59, 59);
+    return fimDoMes.getTime() >= agora.getTime();
+}
+
+function mascararCartao(numero) {
+    const digitos = String(numero || '').replace(/\D/g, '');
+    const ult4 = digitos.slice(-4);
+    return `**** **** **** ${ult4}`;
+}
+
+function bandeiraPeloPrefixo(numero) {
+    const d = String(numero || '').replace(/\D/g, '');
+    if (/^4/.test(d)) return 'visa';
+    if (/^(5[1-5]|2(2[2-9]|[3-6]\d|7[01]|720))/.test(d)) return 'mastercard';
+    if (/^3[47]/.test(d)) return 'amex';
+    if (/^(6011|65|64[4-9]|622)/.test(d)) return 'discover';
+    if (/^(606282|3841)/.test(d)) return 'hipercard';
+    if (/^(50|5[6-8]|6[0-9])/.test(d)) return 'elo';
+    return 'desconhecida';
+}
+
+function limparPagamentoParaResposta(p) {
+    const { _cartaoBruto, _cvv, ...publico } = p;
+    return publico;
+}
+
+// Usuário lista os próprios pagamentos; empresa/admin veem todos.
+app.get('/api/pagamentos', autenticar, (req, res) => {
+    let lista = db.pagamentos;
+    if (req.usuario.tipo === 'usuario') {
+        lista = lista.filter(p => p.usuarioEmail === req.usuario.email);
+    }
+    const saida = lista.map(limparPagamentoParaResposta);
+    res.json({ status: 'sucesso', dados: saida });
+});
+
+app.get('/api/pagamentos/:id', autenticar, (req, res) => {
+    const p = db.pagamentos.find(x => x.id === req.params.id);
+    if (!p) return res.status(404).json({ erro: 'Pagamento não encontrado.' });
+    if (req.usuario.tipo === 'usuario' && p.usuarioEmail !== req.usuario.email) {
+        return res.status(403).json({ erro: 'Este pagamento não pertence a você.' });
+    }
+    res.json({ status: 'sucesso', dados: limparPagamentoParaResposta(p) });
+});
+
+// Simula cobrança no cartão de crédito.
+// Body: { valor, numero, nome, validade, cvv, parcelas?, agendamentoId? }
+app.post('/api/pagamentos/cartao', autenticar, (req, res) => {
+    const { valor, numero, nome, validade, cvv, parcelas, agendamentoId } = req.body || {};
+
+    const valorNum = Number(valor);
+    if (!Number.isFinite(valorNum) || valorNum <= 0) {
+        return res.status(400).json({ erro: 'Informe um valor maior que zero.' });
+    }
+    if (!numero || !nome || !validade || !cvv) {
+        return res.status(400).json({ erro: 'Preencha número do cartão, nome, validade e CVV.' });
+    }
+    const digitos = String(numero).replace(/\D/g, '');
+    if (!cartaoPassaLuhn(digitos)) {
+        return res.status(400).json({ erro: 'Número de cartão inválido.' });
+    }
+    if (!validadeFutura(validade)) {
+        return res.status(400).json({ erro: 'Validade do cartão expirada ou em formato inválido (use MM/AA).' });
+    }
+    const cvvDigitos = String(cvv).replace(/\D/g, '');
+    if (cvvDigitos.length < 3 || cvvDigitos.length > 4) {
+        return res.status(400).json({ erro: 'CVV inválido.' });
+    }
+    const parcelasNum = Math.max(1, Math.min(12, parseInt(parcelas, 10) || 1));
+
+    // Regra de simulação: cartão terminando em 0000 é recusado.
+    const recusado = digitos.endsWith('0000');
+
+    const pagamento = {
+        id: `pag_${crypto.randomBytes(8).toString('hex')}`,
+        usuarioEmail: req.usuario.email,
+        metodo: 'cartao',
+        valor: Math.round(valorNum * 100) / 100,
+        parcelas: parcelasNum,
+        bandeira: bandeiraPeloPrefixo(digitos),
+        cartaoMascarado: mascararCartao(digitos),
+        titular: String(nome).trim(),
+        status: recusado ? 'recusado' : 'aprovado',
+        motivo: recusado ? 'Cartão recusado pela operadora (fundos insuficientes).' : null,
+        codigoAutorizacao: recusado ? null : crypto.randomBytes(4).toString('hex').toUpperCase(),
+        nsu: recusado ? null : String(Date.now()).slice(-9),
+        agendamentoId: agendamentoId || null,
+        criadoEm: new Date().toISOString()
+    };
+    db.pagamentos.push(pagamento);
+
+    const http = recusado ? 402 : 201;
+    res.status(http).json({
+        status: pagamento.status === 'aprovado' ? 'sucesso' : 'recusado',
+        dados: limparPagamentoParaResposta(pagamento)
+    });
+});
+
+// Simula a geração de uma cobrança Pix.
+// Body: { valor, agendamentoId? }
+app.post('/api/pagamentos/pix', autenticar, (req, res) => {
+    const { valor, agendamentoId } = req.body || {};
+    const valorNum = Number(valor);
+    if (!Number.isFinite(valorNum) || valorNum <= 0) {
+        return res.status(400).json({ erro: 'Informe um valor maior que zero.' });
+    }
+    const id = `pag_${crypto.randomBytes(8).toString('hex')}`;
+    const txid = crypto.randomBytes(13).toString('hex').toUpperCase().slice(0, 25);
+    // "Copia e cola" simulado — não é um BR Code Pix real, é apenas uma string
+    // determinística para o cliente mostrar ao usuário.
+    const copiaECola = `00020126PIXSIMULADO${txid}5204000053039865802BR5913OndeTem Pay6009SAQUAREMA62070503***6304${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
+    const expiraEm = new Date(Date.now() + 30 * 60 * 1000).toISOString(); // 30 min
+
+    const pagamento = {
+        id,
+        usuarioEmail: req.usuario.email,
+        metodo: 'pix',
+        valor: Math.round(valorNum * 100) / 100,
+        status: 'aguardando',
+        txid,
+        copiaECola,
+        qrCodeTexto: copiaECola,
+        expiraEm,
+        agendamentoId: agendamentoId || null,
+        criadoEm: new Date().toISOString()
+    };
+    db.pagamentos.push(pagamento);
+
+    res.status(201).json({ status: 'sucesso', dados: limparPagamentoParaResposta(pagamento) });
+});
+
+// Simula a confirmação do pagamento Pix (na vida real viria por webhook do PSP).
+app.post('/api/pagamentos/pix/:id/confirmar', autenticar, (req, res) => {
+    const p = db.pagamentos.find(x => x.id === req.params.id);
+    if (!p) return res.status(404).json({ erro: 'Pagamento não encontrado.' });
+    if (p.metodo !== 'pix') {
+        return res.status(400).json({ erro: 'Este pagamento não é um Pix.' });
+    }
+    if (req.usuario.tipo === 'usuario' && p.usuarioEmail !== req.usuario.email) {
+        return res.status(403).json({ erro: 'Este pagamento não pertence a você.' });
+    }
+    if (p.status === 'aprovado') {
+        return res.json({ status: 'sucesso', dados: limparPagamentoParaResposta(p), mensagem: 'Pagamento já estava aprovado.' });
+    }
+    if (p.status !== 'aguardando') {
+        return res.status(409).json({ erro: `Pagamento não pode ser confirmado (status atual: ${p.status}).` });
+    }
+    if (p.expiraEm && new Date(p.expiraEm).getTime() < Date.now()) {
+        p.status = 'expirado';
+        return res.status(410).json({ erro: 'Cobrança Pix expirada.', dados: limparPagamentoParaResposta(p) });
+    }
+    p.status = 'aprovado';
+    p.pagoEm = new Date().toISOString();
+    p.endToEndId = `E${Date.now()}${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+    res.json({ status: 'sucesso', dados: limparPagamentoParaResposta(p) });
 });
 
 // ==========================================
