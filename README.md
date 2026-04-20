@@ -10,7 +10,9 @@ PWA (Progressive Web App) em Node.js/Express para conectar clientes a salões, c
 - [Páginas](#páginas)
 - [Fluxo de cadastro de empresa com localização no mapa](#fluxo-de-cadastro-de-empresa-com-localização-no-mapa)
 - [Mapa de empresas próximas (para usuários)](#mapa-de-empresas-próximas-para-usuários)
+- [Simulação de pagamento (cartão e Pix)](#simulação-de-pagamento-cartão-e-pix)
 - [API relevante](#api-relevante)
+- [Resultados dos testes E2E (T1–T8)](#resultados-dos-testes-e2e-t1t8)
 - [Plano de testes](#plano-de-testes-cadastros--admin)
 
 ## Como rodar
@@ -59,15 +61,120 @@ Na home (`/`), o mapa (Leaflet + OpenStreetMap) mostra três camadas:
 
 Ao clicar em um marcador roxo, o popup mostra o nome, categorias, endereço e telefone da empresa, e — quando a geolocalização do usuário está disponível — a **distância aproximada até você** (em metros se < 1 km, senão em km), calculada com a fórmula de Haversine.
 
+## Simulação de pagamento (cartão e Pix)
+
+O app expõe uma **API de simulação de pagamento** para permitir testar o fluxo de agendamento de ponta a ponta sem integrar um gateway real. Todos os endpoints exigem token de login.
+
+> ⚠️ **É uma simulação.** Nada é cobrado de verdade. Não envie dados reais de cartão. Os dados sensíveis (número completo e CVV) **nunca** são persistidos nem devolvidos pela API — apenas bandeira, 4 últimos dígitos e nome do titular.
+
+### Regras de simulação
+
+**Cartão de crédito (`POST /api/pagamentos/cartao`)**
+- Número precisa passar no algoritmo de **Luhn**, ter entre 13 e 19 dígitos. Bandeira é detectada pelo prefixo (Visa, Mastercard, Amex, Discover, Hipercard, Elo).
+- Validade em `MM/AA` ou `MM/AAAA`, precisa estar no futuro.
+- CVV de 3 ou 4 dígitos.
+- Números de teste:
+  - ✅ Aprovado: `4111 1111 1111 1111`, `5555 5555 5555 4444`, ou qualquer outro que passe no Luhn e **não** termine em `0000`.
+  - ❌ Recusado: qualquer cartão que passe no Luhn mas termine em `0000` (ex.: `4242 4242 4242 0000`) — simula "fundos insuficientes". A API responde **402 Payment Required**.
+
+**Pix (`POST /api/pagamentos/pix` + `POST /api/pagamentos/pix/:id/confirmar`)**
+- `/api/pagamentos/pix` gera uma cobrança com `status: "aguardando"`, um `txid` aleatório, um código "copia e cola" simulado e validade de 30 minutos.
+- Em produção, a baixa viria por webhook do PSP. Como isso é uma simulação, expomos `POST /api/pagamentos/pix/:id/confirmar` para o próprio pagador "confirmar" o Pix — a API então passa o status para `aprovado` e devolve um `endToEndId`.
+- Após a expiração (`expiraEm`), qualquer tentativa de confirmar devolve **410 Gone** com status `expirado`.
+
+### Exemplos com `curl`
+
+```bash
+# 1) Login como usuário comum
+TOKEN=$(curl -s -X POST http://localhost:3000/api/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"joao@email.com","senha":"123456","tipo":"usuario"}' \
+  | jq -r .token)
+
+# 2) Pagamento com cartão — aprovado
+curl -s -X POST http://localhost:3000/api/pagamentos/cartao \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"valor":95.5,"numero":"4111 1111 1111 1111","nome":"JOAO SILVA","validade":"12/29","cvv":"123","parcelas":2}'
+
+# 3) Pagamento com cartão — recusado (termina em 0000)
+curl -s -X POST http://localhost:3000/api/pagamentos/cartao \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"valor":50,"numero":"4242 4242 4242 0000","nome":"JOAO","validade":"12/29","cvv":"123"}'
+
+# 4) Gerar cobrança Pix
+PIX=$(curl -s -X POST http://localhost:3000/api/pagamentos/pix \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"valor":120.75}')
+echo "$PIX"
+
+# 5) Confirmar Pix (simula baixa do PSP)
+PIX_ID=$(echo "$PIX" | jq -r .dados.id)
+curl -s -X POST "http://localhost:3000/api/pagamentos/pix/$PIX_ID/confirmar" \
+  -H "Authorization: Bearer $TOKEN"
+
+# 6) Listar pagamentos do usuário logado
+curl -s http://localhost:3000/api/pagamentos -H "Authorization: Bearer $TOKEN"
+```
+
+### UI integrada
+
+No modal de agendamento da home, ao escolher **Cartão de Crédito** aparece um formulário com máscaras para número, validade e CVV. Ao escolher **Pix**, ao confirmar é exibido o QR Code + "copia e cola" e um botão **"Já paguei (simular confirmação)"** que dispara `POST /api/pagamentos/pix/:id/confirmar` e, em seguida, cria o agendamento com o `pagamentoId` associado.
+
 ## API relevante
 
-| Método | Rota                          | Descrição                                                                 |
-|-------:|-------------------------------|---------------------------------------------------------------------------|
-| POST   | `/api/login`                  | Autentica admin/empresa/usuário e devolve `token` + `usuario`.            |
-| POST   | `/api/empresas`               | Cadastra nova empresa. **Exige `lat`/`lng` válidos**. Persiste endereço estruturado, categorias, serviços e horários. |
-| GET    | `/api/empresas/publicas`      | Lista empresas com coordenadas válidas para exibição no mapa público (sem senhas, sem dados internos). |
-| GET    | `/api/empresas`               | Lista completa para o painel admin (sem senha).                           |
-| POST   | `/api/agendamentos`           | Cria agendamento (exige token de `usuario`).                              |
+| Método | Rota                                         | Descrição                                                                 |
+|-------:|----------------------------------------------|---------------------------------------------------------------------------|
+| POST   | `/api/login`                                 | Autentica admin/empresa/usuário e devolve `token` + `usuario`.            |
+| POST   | `/api/empresas`                              | Cadastra nova empresa. **Exige `lat`/`lng` válidos**.                      |
+| GET    | `/api/empresas/publicas`                     | Lista empresas com coordenadas válidas (campos seguros).                   |
+| GET    | `/api/empresas`                              | Lista completa para o painel admin (sem senha).                            |
+| POST   | `/api/agendamentos`                          | Cria agendamento (exige token de `usuario`). Aceita `pagamentoId` opcional. |
+| POST   | `/api/pagamentos/cartao`                     | **Simula** cobrança no cartão de crédito (Luhn, validade, CVV).           |
+| POST   | `/api/pagamentos/pix`                        | **Simula** geração de cobrança Pix com QR Code.                           |
+| POST   | `/api/pagamentos/pix/:id/confirmar`          | **Simula** confirmação do Pix (status `aguardando` → `aprovado`).          |
+| GET    | `/api/pagamentos`                            | Lista pagamentos do usuário logado (admin vê todos).                       |
+| GET    | `/api/pagamentos/:id`                        | Consulta status de um pagamento específico.                                |
+
+---
+
+## Resultados dos testes E2E (T1–T8)
+
+Última execução: **20/04/2026**, em `http://localhost:3000` (servidor Express local), Chrome maximizado, gravação única com anotações por teste. O plano completo está em [`test-plan.md`](./test-plan.md) e o relatório detalhado em [`test-report.md`](./test-report.md).
+
+🎥 **Vídeo da execução completa:** (./docs/video/completo.mp4)
+
+| # | Teste | Fix/feature | Resultado |
+|---|-------|-------------|-----------|
+| T1 | Prompt nativo de notificação aparece sozinho ao abrir `/` (sem botão 🔔 no header) | PR #8 / #9 | ✅ passed |
+| T2 | Agendar sem login abre modal "Login necessário" (`href=login.html?redirect=%2F`) | PR #3 | ✅ passed |
+| T3 | Login válido `joao@email.com` volta para home sem "Erro de conexão" | PR #3 | ✅ passed |
+| T4 | Pix: QR + "copia e cola" + "Já paguei" → notificação "Agendamento Confirmado!" | PR #6 / #9 | ✅ passed |
+| T5 | Reabrir modal após Pix: `#pixCobranca` resetado, sem QR antigo | PR #7 | ✅ passed |
+| T6 | Cartão `4111 1111 1111 1111` aprovado + notificação | PR #6 / #9 | ✅ passed |
+| T7 | Cadastro de empresa bloqueado sem mapa; lat/lng com 6 decimais após clique; cadastro OK | PR #5 | ✅ passed |
+| T8 | Marcador roxo da empresa recém-criada na home (popup com nome, endereço, telefone e "de você") | PR #5 | ✅ passed |
+
+> **Observação (não é bug):** o Chrome da VM de teste retorna uma geolocalização mock nos EUA, então a distância exibida no popup do marcador roxo aparece grande (~4656 km). Para um usuário real em Saquarema o cálculo Haversine produz metros/poucos km — o formato (`N m` / `N.N km` + " de você") e os dígitos estão corretos.
+
+### Evidências (prints)
+
+**T7 — Lat/Lng com 6 casas decimais após clicar no mapa**
+
+![T7 – mapa com lat/lng preenchidos](./docs/screenshots/t7-mapa-lat-lng.png)
+
+Após clicar no mapa, `Latitude = 17.371610` e `Longitude = -68.906250` são preenchidos automaticamente (bate com `^-?\d{1,3}\.\d{6}$`) e o status vermelho "Marque a localização da empresa no mapa antes de cadastrar." é substituído por "Localização marcada: 17.371610, -68.906250".
+
+**T7 — Cadastro de empresa concluído com sucesso**
+
+![T7 – banner de cadastro OK](./docs/screenshots/t7-cadastro-sucesso.png)
+
+Banner verde "Empresa cadastrada com sucesso! Sua conta está em análise. Redirecionando..." é exibido e o formulário é resetado antes do redirect para `/login.html`.
+
+**T8 — Marcador roxo da nova empresa na home**
+
+![T8 – marcador roxo na home](./docs/screenshots/t8-marcador-roxo.png)
+
+Popup do marcador roxo na home exibe: `Salão E2E Final` / `Cabelo` / `Rua Teste, 123 - Centro - Saquarema - RS - 28990-000` / `(22) 99999-0000` / `4656.5 km de você`.
 
 ---
 
