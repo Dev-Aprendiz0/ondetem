@@ -218,26 +218,6 @@ Boas próximas evoluções, em ordem de impacto × esforço:
 
 > **Observação (não é bug):** o Chrome da VM de teste retorna uma geolocalização mock nos EUA, então a distância exibida no popup do marcador roxo aparece grande (~4656 km). Para um usuário real em Saquarema o cálculo Haversine produz metros/poucos km — o formato (`N m` / `N.N km` + " de você") e os dígitos estão corretos.
 
-### Evidências (prints)
-
-**T7 — Lat/Lng com 6 casas decimais após clicar no mapa**
-
-![T7 – mapa com lat/lng preenchidos](./docs/screenshots/t7-mapa-lat-lng.png)
-
-Após clicar no mapa, `Latitude = 17.371610` e `Longitude = -68.906250` são preenchidos automaticamente (bate com `^-?\d{1,3}\.\d{6}$`) e o status vermelho "Marque a localização da empresa no mapa antes de cadastrar." é substituído por "Localização marcada: 17.371610, -68.906250".
-
-**T7 — Cadastro de empresa concluído com sucesso**
-
-![T7 – banner de cadastro OK](./docs/screenshots/t7-cadastro-sucesso.png)
-
-Banner verde "Empresa cadastrada com sucesso! Sua conta está em análise. Redirecionando..." é exibido e o formulário é resetado antes do redirect para `/login.html`.
-
-**T8 — Marcador roxo da nova empresa na home**
-
-![T8 – marcador roxo na home](./docs/screenshots/t8-marcador-roxo.png)
-
-Popup do marcador roxo na home exibe: `Salão E2E Final` / `Cabelo` / `Rua Teste, 123 - Centro - Saquarema - RS - 28990-000` / `(22) 99999-0000` / `4656.5 km de você`.
-
 ---
 
 ## Home estilo Airbnb (PR #15 — atual)
@@ -284,32 +264,6 @@ Execução em `http://localhost:3000`, branch `devin/1776719299-home-redesign`, 
 | C2 | Pix gera `#pixCobranca` com QR + copia-e-cola + botão "Já paguei" | ✅ passed |
 | C3 | "Já paguei" confirma e exibe toast + notificação desktop | ✅ passed |
 | D1 | Mapa Leaflet carrega tiles OSM + marcador azul do usuário + marcador roxo da empresa | ✅ passed |
-
-### Evidências (prints)
-
-**C1 — Modal de agendamento abrindo (valida o fix crítico)**
-
-![PR #11 – modal de agendamento](./docs/screenshots/pr11-modal-agendamento.png)
-
-Clique em **Agendar** no card "Studio Bella Donna" (com a nova classe `.btn-primary-onde` e ícone filho) abre corretamente o `#modalAgendamento` com título "Agendar em: Studio Bella Donna".
-
-**C2 — Pix com QR Code gerado**
-
-![PR #11 – QR Code Pix](./docs/screenshots/pr11-pix-qrcode.png)
-
-Após o submit com forma de pagamento **Pix**, o bloco `#pixCobranca` aparece com QR Code, código copia-e-cola e botão "Já paguei (simular confirmação)".
-
-**C3 — Agendamento confirmado após "Já paguei"**
-
-![PR #11 – agendamento confirmado](./docs/screenshots/pr11-agendamento-confirmado.png)
-
-Ao clicar em "Já paguei", o toast verde "Agendamento confirmado em Studio Bella Donna" aparece e a notificação desktop nativa mostra a reserva para 25/12/2026 às 11:00.
-
-**D1 — Mapa com marcadores**
-
-![PR #11 – mapa com marcadores](./docs/screenshots/pr11-mapa-marcadores.png)
-
-Tiles do OpenStreetMap carregados, marcador azul "Você está aqui!" e marcador roxo da empresa cadastrada visíveis.
 
 ---
 
