@@ -141,7 +141,7 @@ flowchart TD
     A(["/cadastro-usuario"]) --> B[Preencher: nome, email,<br/>telefone, CPF, endereço,<br/>data nasc., gênero, senha]
     B --> C[POST /api/usuarios]
     C --> D{validação}
-    D -->|email duplicado| DE[400 — email já cadastrado]
+    D -->|email duplicado| DE[409 — E-mail já cadastrado]
     D -->|OK| E[db.usuarios.push<br/>retorna 201]
     E --> F[redirect /login]
 
@@ -173,7 +173,8 @@ flowchart TD
     E0 --> D
     E -->|sim| F[POST /api/empresas<br/>payload completo + lat/lng]
     F --> G{validação server}
-    G -->|lat/lng inválido<br/>OU email duplicado| GErr[400]
+    G -->|lat/lng inválido| GErr400[400 — localização inválida]
+    G -->|email duplicado| GErr409[409 — E-mail já cadastrado]
     G -->|OK| H[db.empresas.push<br/>{ativa: true}<br/>retorna 201]
     H --> I[redirect /login]
 
@@ -183,7 +184,7 @@ flowchart TD
     Tabs -->|Perfil| P1[GET/PUT /api/empresa/perfil]
     Tabs -->|Serviços| P2[CRUD /api/empresa/servicos]
     Tabs -->|Agendamentos| P3[GET /api/agendamentos<br/>filtrado por empresa]
-    P3 --> Aceitar[PATCH /api/agendamentos/:id<br/>status: confirmado OU cancelado]
+    P3 --> Aceitar[PATCH /api/agendamentos/:id<br/>status: pendente · confirmado · recusado · concluido]
     Tabs -->|Dashboard| P4[GET /api/empresa/dashboard<br/>totais + receita]
 
     subgraph Public["Home do cliente final"]
@@ -219,8 +220,8 @@ flowchart TD
     subgraph Listar["Listar pagamentos"]
         LA[GET /api/pagamentos]
         LA --> LTipo{tipo do usuário?}
-        LTipo -->|usuario| LU[filtra usuarioId == req.user.id]
-        LTipo -->|empresa| LE[filtra empresaId via agendamento.pagamentoId]
+        LTipo -->|usuario| LU[filtra p.usuarioEmail == req.usuario.email]
+        LTipo -->|empresa| LE[coleta pagamentoId dos agendamentos<br/>com empresaId == req.usuario.id<br/>e filtra db.pagamentos por esses ids]
         LTipo -->|admin| LAdm[retorna todos]
     end
 
