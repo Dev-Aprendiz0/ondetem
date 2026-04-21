@@ -797,6 +797,12 @@
         e.preventDefault();
         if (confirm('Deseja sair do painel administrativo?')) {
           sessionStorage.removeItem(STORAGE_KEYS_ADMIN.adminLogado);
+          // Encerra também a sessão do OndeTemAuth (SSO). Sem isso, o check em
+          // verificarLoginAdmin() re-autentica o admin automaticamente ao recarregar.
+          if (window.OndeTemAuth) {
+            OndeTemAuth.logout();
+            return;
+          }
           document.getElementById('adminPanel').classList.add('d-none');
           document.getElementById('adminLogin').classList.remove('d-none');
           document.getElementById('formLoginAdmin').reset();
