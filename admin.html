@@ -797,9 +797,11 @@
         e.preventDefault();
         if (confirm('Deseja sair do painel administrativo?')) {
           sessionStorage.removeItem(STORAGE_KEYS_ADMIN.adminLogado);
-          // Encerra também a sessão do OndeTemAuth (SSO). Sem isso, o check em
-          // verificarLoginAdmin() re-autentica o admin automaticamente ao recarregar.
-          if (window.OndeTemAuth) {
+          // Se a sessão veio via SSO (login em /login), encerra pelo OndeTemAuth
+          // — que também redireciona para /login. Sem isso, verificarLoginAdmin()
+          // re-autentica o admin automaticamente ao recarregar.
+          const ssoUser = window.OndeTemAuth && OndeTemAuth.obterUsuario();
+          if (ssoUser && ssoUser.tipo === 'admin') {
             OndeTemAuth.logout();
             return;
           }
