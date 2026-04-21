@@ -388,8 +388,8 @@
       btn.addEventListener('click', () => {
         const hidden = wrapper.classList.toggle('is-hidden');
         btn.querySelector('span').textContent = hidden ? 'Mostrar mapa' : 'Ocultar mapa';
-        if (!hidden && window.leafletMap && typeof window.leafletMap.invalidateSize === 'function') {
-          setTimeout(() => window.leafletMap.invalidateSize(), 150);
+        if (!hidden && typeof mapaInstancia !== 'undefined' && mapaInstancia && typeof mapaInstancia.invalidateSize === 'function') {
+          setTimeout(() => mapaInstancia.invalidateSize(), 150);
         }
       });
     })();
