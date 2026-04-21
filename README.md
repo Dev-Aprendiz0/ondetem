@@ -13,6 +13,8 @@ PWA (Progressive Web App) em Node.js/Express para conectar clientes a salões, c
 - [Mapa de empresas próximas (para usuários)](#mapa-de-empresas-próximas-para-usuários)
 - [Simulação de pagamento (cartão e Pix)](#simulação-de-pagamento-cartão-e-pix)
 - [API relevante](#api-relevante)
+- [Arquitetura & limitações conhecidas](#arquitetura--limitações-conhecidas)
+- [Roadmap / sugestões para evolução](#roadmap--sugestões-para-evolução)
 - [Resultados dos testes E2E (T1–T8)](#resultados-dos-testes-e2e-t1t8)
 - [Resultados do teste E2E da home redesenhada (PR #11)](#resultados-do-teste-e2e-da-home-redesenhada-pr-11)
 - [Plano de testes](#plano-de-testes-cadastros--admin)
@@ -22,6 +24,12 @@ PWA (Progressive Web App) em Node.js/Express para conectar clientes a salões, c
 npm install
 npm start
 # Servidor em http://localhost:3000
+
+# Testes unitários/smoke (node --test nativo, sem dependências)
+npm test
+
+# Healthcheck
+curl http://localhost:3000/healthz
 ```
 
 ## Credenciais de teste
@@ -157,6 +165,33 @@ No modal de agendamento da home, ao escolher **Cartão de Crédito** aparece um 
 | POST   | `/api/pagamentos/pix/:id/confirmar`          | **Simula** confirmação do Pix (status `aguardando` → `aprovado`).          |
 | GET    | `/api/pagamentos`                            | Lista pagamentos do usuário logado (admin vê todos).                       |
 | GET    | `/api/pagamentos/:id`                        | Consulta status de um pagamento específico.                                |
+| GET    | `/healthz`                                   | Healthcheck: `uptime`, `timestamp` e contadores do "banco" em memória.     |
+
+## Arquitetura & limitações conhecidas
+
+Projeto **acadêmico**, em Node/Express puro (sem framework web adicional, sem ORM). Intencionalmente simples para facilitar estudo, mas com vários pontos que precisariam evoluir para produção:
+
+- **Banco de dados em memória** (`db = { usuarios, empresas, agendamentos, pagamentos, sessoes }` em `server.js`). Os dados são perdidos a cada restart. Para produção, migrar para SQLite / PostgreSQL + camada de acesso (Prisma, Knex ou `better-sqlite3`).
+- **Senhas em plaintext** nas seeds e no cadastro. Para produção, salvar `bcrypt.hash(senha, 10)` e trocar o fluxo de login por comparação com `bcrypt.compare`.
+- **Sessões em `Map`** com tokens hex de 24 bytes. Sem expiração nem rotação. Alternativas: JWT assinado + refresh token, ou `express-session` com store persistente.
+- **Sem rate-limit / helmet / CORS restrito**. Em produção: `helmet()`, `express-rate-limit` nas rotas de login/cadastro, CORS com allowlist.
+- **Simulação de pagamento**: `/api/pagamentos/cartao` e `/api/pagamentos/pix` **não integram** gateway real — seguem regras determinísticas (Luhn + sufixo `0000` recusa) para permitir testes E2E. Nunca envie dados reais de cartão.
+- **Chave VAPID de exemplo** em `app.js`. Para enviar push push real do servidor, gerar um par com `web-push generate-vapid-keys` e guardar a privada como variável de ambiente.
+- **PWA**: `manifest.json` usa `img/Logo-png 5.svg` como ícone (192/512/any/maskable). Para uma instalação mais bonita, gerar PNGs dedicados em 192×192, 512×512 e ícone maskable com padding de 10% nas bordas.
+
+## Roadmap / sugestões para evolução
+
+Boas próximas evoluções, em ordem de impacto × esforço:
+
+1. **Persistência real** — swap do `db` em memória por SQLite (`better-sqlite3`) com migrations simples. Zero dependências pesadas e resolve o maior limite atual.
+2. **Senhas com `bcrypt`** + **JWT** (ou `express-session`). Fecha o principal buraco de segurança do backend.
+3. **`helmet` + `express-rate-limit`** em `/api/login`, `/api/usuarios` e `/api/empresas` para mitigar brute-force e headers faltando.
+4. **Filtro por categoria no mapa** (hoje o filtro de categoria só esconde cards; poderia também esconder marcadores roxos correspondentes).
+5. **Busca por distância** — ordenar cards na home pela distância Haversine até a geolocalização do usuário e mostrar "X km" em cada card, não só no popup.
+6. **Avaliações reais** — hoje rating é seed. Permitir que usuário dê nota/comentário após `status === 'concluido'`.
+7. **Deploy** — como a app é stateful (DB em memória), o passo 1 (SQLite) é pré-requisito. Depois, um `Dockerfile` + Fly.io / Render resolve.
+8. **Mode escuro** — tokens CSS já estão isolados em `:root`; basta um `@media (prefers-color-scheme: dark)` espelhando os tokens.
+9. **Testes automatizados de API** — hoje existe um smoke de `/healthz` com `node --test`; expandir para cobrir `/api/login`, `/api/pagamentos/cartao` aprovado/recusado e `/api/empresas` bloqueando sem `lat/lng`.
 
 ---
 
