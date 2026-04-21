@@ -592,6 +592,11 @@ app.post('/api/empresas', (req, res) => {
 });
 
 // ==========================================
+// Chat IA (Google Gemini) — registra POST /api/chat
+// ==========================================
+require('./chat').registrarRotas(app);
+
+// ==========================================
 // INICIALIZAÇÃO
 // ==========================================
 app.listen(PORT, () => {

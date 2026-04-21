@@ -37,6 +37,17 @@ npm test
 curl http://localhost:3000/healthz
 ```
 
+### Chat IA (opcional)
+O widget de chat flutuante (canto inferior direito) é proxy para o **Google Gemini** (`gemini-2.5-flash-lite`). Para ativar, defina `GEMINI_API_KEY` antes de rodar o servidor:
+
+```bash
+export GEMINI_API_KEY="sua-chave-do-google-ai-studio"
+# Chave gratuita em https://aistudio.google.com/apikey
+npm start
+```
+
+Sem a chave, o endpoint `POST /api/chat` responde `503` com aviso amigável e o widget mostra o erro para o usuário. A chave **nunca** é exposta ao cliente (fica só no processo do servidor). Modelo alternativo: `GEMINI_MODEL=gemini-2.5-flash npm start`.
+
 ## Credenciais de teste
 | Tipo      | E-mail                 | Senha  |
 |-----------|------------------------|--------|
