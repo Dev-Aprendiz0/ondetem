@@ -29,7 +29,7 @@ flowchart LR
         Empresas[("empresas")]
         Agend[("agendamentos")]
         Pag[("pagamentos")]
-        Sess[("sessoes<br/>token → {userId, tipo, expiraEm}")]
+        Sess[("sessoes<br/>Map&lt;token, {id, email, tipo, nome}&gt;<br/>sem expiração — vive até restart")]
     end
 
     subgraph Ext["Serviços externos (CDN)"]
@@ -109,7 +109,7 @@ flowchart TD
     D --> E{servidor<br/>valida em db}
     E -->|não encontra| Erro[401 — credenciais inválidas]
     Erro --> A
-    E -->|match| F[cria token em db.sessoes<br/>{userId, tipo, expiraEm: +7d}]
+    E -->|match| F[cria token em db.sessoes<br/>armazena {id, email, tipo, nome}<br/>sem expiração]
     F --> G[200 OK<br/>retorna {token, usuario}]
     G --> H["OndeTemAuth.salvarSessao<br/>localStorage: ondetem_token + ondetem_usuario"]
     H --> I{destinoPorTipo}
@@ -237,12 +237,11 @@ flowchart TD
 ```mermaid
 flowchart LR
     Req["Request<br/>Authorization: Bearer TOKEN"] --> A{autenticar}
-    A -->|header ausente| E401a[401 — token ausente]
-    A -->|token não existe em db.sessoes| E401b[401 — token inválido]
-    A -->|expirou| E401c[401 — sessão expirada]
-    A -->|OK| Attach["req.user = {id, tipo}"]
+    A -->|header ausente OU não começa com Bearer| E401a[401 — Não autenticado]
+    A -->|token não existe em db.sessoes| E401b[401 — Não autenticado]
+    A -->|OK| Attach["req.usuario = {id, email, tipo, nome}"]
     Attach --> T{exigirTipo<br/>tipos permitidos?}
-    T -->|req.user.tipo dentro| Next[handler da rota]
+    T -->|req.usuario.tipo dentro| Next[handler da rota]
     T -->|não| E403[403 — acesso negado]
 
     subgraph Cliente["No browser (auth-guard.js)"]
@@ -301,11 +300,13 @@ flowchart TD
     ActSkip --> Act["activate<br/>limpa caches com nomes antigos<br/>clients.claim"]
     Act --> Fetch[fetch handler]
 
-    Fetch --> Q{URL pertence a<br/>/api/?}
-    Q -->|sim| NetOnly[network-only<br/>nunca cacheia API]
-    Q -->|não| Q2{é navegação HTML?}
-    Q2 -->|sim| NF[network-first<br/>fallback cache<br/>fallback offline.html]
-    Q2 -->|não| CF[cache-first<br/>se miss busca rede<br/>guarda em RUNTIME_CACHE]
+    Fetch --> Q{método GET?}
+    Q -->|não| Skip[passa direto<br/>sem interceptar]
+    Q -->|sim| Q2{mesmo origin<br/>e /api/*?}
+    Q2 -->|sim| NetOnly[network-only<br/>nunca cacheia API]
+    Q2 -->|não| Q3{mesmo origin?}
+    Q3 -->|sim — HTML/JS/CSS| NF[network-first<br/>guarda 200 em CACHE_NAME<br/>fallback cache quando offline]
+    Q3 -->|não — CDN/externo| SWR[stale-while-revalidate<br/>retorna cache imediatamente<br/>revalida em background<br/>guarda em RUNTIME_CACHE]
 
     ActSkip --> Msg["postMessage 'SW_UPDATED'<br/>aos clients"]
     Msg --> Reload[scripts forçam reload<br/>nas abas abertas]
@@ -350,7 +351,7 @@ flowchart LR
 ## 12. Legenda
 
 - **PWA**: Progressive Web App servido por `express.static` + Service Worker.
-- **Token**: UUID gerado no `POST /api/login`, guardado em `db.sessoes` com `expiraEm = agora + 7d`.
+- **Token**: UUID gerado no `POST /api/login`, guardado em `db.sessoes` (`Map<token, usuario>`) **sem expiração** — a sessão persiste enquanto o servidor estiver rodando. Reiniciar o servidor invalida todos os tokens (consequência do `db` em memória).
 - **OndeTemAuth**: IIFE em `auth-guard.js` que encapsula `salvarSessao / obterUsuario / exigirLogin / api / logout` usando `localStorage`.
 - **SSO admin**: o painel `/admin` aceita sessão do `OndeTemAuth` vinda do login em `/login` (aba Admin) sem pedir login novamente.
 - **db**: objeto em memória — não persiste após reinício do servidor (limitação conhecida, ver README).
