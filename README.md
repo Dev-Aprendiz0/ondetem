@@ -8,6 +8,7 @@ PWA (Progressive Web App) em Node.js/Express para conectar clientes a salões, c
 - [Como rodar](#como-rodar)
 - [Credenciais de teste](#credenciais-de-teste)
 - [Páginas](#páginas)
+- [Fluxograma do projeto](./docs/fluxograma.md)
 - [Home redesenhada (PR #11)](#home-redesenhada-pr-11)
 - [Home estilo Airbnb (PR #15 — atual)](#home-estilo-airbnb-pr-15--atual)
 - [Correção do login do admin (PR #16)](#correção-do-login-do-admin-pr-16)
