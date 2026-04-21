@@ -3,8 +3,8 @@
  * Implementação baseada na Aula 6 - Engenharia de Software
  */
 
-const CACHE_NAME = 'ondetem-cache-v24';
-const RUNTIME_CACHE = 'ondetem-runtime-v24';
+const CACHE_NAME = 'ondetem-cache-v25';
+const RUNTIME_CACHE = 'ondetem-runtime-v25';
 
 // Arquivos essenciais para funcionar offline
 const urlsToCache = [
