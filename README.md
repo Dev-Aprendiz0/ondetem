@@ -64,26 +64,6 @@ Sem a chave, o endpoint `POST /api/chat` responde `503` com aviso amigável e o 
 - **`/admin`** — Painel administrativo (exige `admin@ondetem.com`).
 - **`/painel-empresa`** — Painel da empresa logada.
 
-## Home redesenhada (PR #11)
-
-A home (`/`) foi redesenhada com a linguagem visual de clínicas de estética premium, inspirada em [mybeleza.com.br](https://www.mybeleza.com.br/) e [onodera.com.br](https://www.onodera.com.br/). Toda a funcionalidade (filtro de categorias, agendamento, login-gate, Pix/cartão, mapa, notificações) foi preservada.
-
-**Design system**
-- Tipografia: **Playfair Display** (títulos/display) + **Inter** (UI).
-- Paleta: roxo primário `#553A73`, roxo claro `#7D5AA0`, acento dourado `#C9A36B`, off-white (`#FAFAF7`, `#F5F1EC`).
-- Botões com gradiente (`.btn-primary-onde`), contorno (`.btn-outline-onde`) e ghost (`.btn-ghost`); compatibilidade mantida com `.btn-danger` nas demais páginas.
-- Service Worker cache bump: **v11 → v12 → v13** para invalidar CSS/JS antigos nos clientes.
-
-**Novas seções na home**
-- **Topbar** com "Encontre serviços de beleza perto de você" + atalhos para parceiro/suporte.
-- **Hero** bipartido: headline em Playfair ("Seu momento de beleza, *agendado em cliques.*"), lead, CTAs, checklist e galeria com dois cards flutuantes animados ("+10.000 agendamentos" e "4.9/5 avaliação").
-- **Stats bar** com 4 números de credibilidade (+500, +10k, 4.9/5, 24/7).
-- **Tratamentos em alta**: 6 cards populares com preço "a partir de".
-- **Como funciona**: 3 passos numerados (Descubra → Agende → Aproveite).
-- **CTA empresas**: box roxo com glow dourado e CTA em branco.
-- **Footer escuro**: 4 colunas (Empresa / Para você / Para seu negócio / redes sociais) + tag "Pagamento seguro • Pix e cartão".
-
-**Cards de salão evoluídos**: badge "Verificado", rating dourado em pill, distância com ícone, preços alinhados à direita e botão "Agendar" com ícone de calendário.
 
 ## Fluxo de cadastro de empresa com localização no mapa
 
@@ -211,30 +191,9 @@ Boas próximas evoluções, em ordem de impacto × esforço:
 
 ---
 
-## Resultados dos testes E2E (T1–T8)
-
-Última execução: **20/04/2026**, em `http://localhost:3000` (servidor Express local), Chrome maximizado, gravação única com anotações por teste. O plano completo está em [`test-plan.md`](./test-plan.md) e o relatório detalhado em [`test-report.md`](./test-report.md).
-
-🎥 **Vídeo da execução completa:** (./docs/video/completo.mp4)
-
-| # | Teste | Fix/feature | Resultado |
-|---|-------|-------------|-----------|
-| T1 | Prompt nativo de notificação aparece sozinho ao abrir `/` (sem botão 🔔 no header) | PR #8 / #9 | ✅ passed |
-| T2 | Agendar sem login abre modal "Login necessário" (`href=login.html?redirect=%2F`) | PR #3 | ✅ passed |
-| T3 | Login válido `joao@email.com` volta para home sem "Erro de conexão" | PR #3 | ✅ passed |
-| T4 | Pix: QR + "copia e cola" + "Já paguei" → notificação "Agendamento Confirmado!" | PR #6 / #9 | ✅ passed |
-| T5 | Reabrir modal após Pix: `#pixCobranca` resetado, sem QR antigo | PR #7 | ✅ passed |
-| T6 | Cartão `4111 1111 1111 1111` aprovado + notificação | PR #6 / #9 | ✅ passed |
-| T7 | Cadastro de empresa bloqueado sem mapa; lat/lng com 6 decimais após clique; cadastro OK | PR #5 | ✅ passed |
-| T8 | Marcador roxo da empresa recém-criada na home (popup com nome, endereço, telefone e "de você") | PR #5 | ✅ passed |
-
-> **Observação (não é bug):** o Chrome da VM de teste retorna uma geolocalização mock nos EUA, então a distância exibida no popup do marcador roxo aparece grande (~4656 km). Para um usuário real em Saquarema o cálculo Haversine produz metros/poucos km — o formato (`N m` / `N.N km` + " de você") e os dígitos estão corretos.
-
----
 
 ## Home estilo Airbnb (PR #15 — atual)
 
-A home atual em `main` segue o padrão visual do [airbnb.com.br](https://www.airbnb.com.br/): produto na frente, mapa acessível via toggle. Toda a lógica (`script.js`, `server.js`, `auth-guard.js`) foi preservada.
 
 **Novo visual**
 - Topbar desktop com logo, pill de busca com label flutuante e botão circular coral, link "Anuncie seu salão" e menu de usuário à direita.
@@ -247,37 +206,7 @@ A home atual em `main` segue o padrão visual do [airbnb.com.br](https://www.air
 
 **Hooks preservados** (mesmo IDs/classes que o `script.js` espera): `.card-salao[data-index]`, `.card-salao .card-body .btn`, `.category-item > p`, `.search-bar input`, `#modalLoginNecessario`, `#modalAgendamento`, `#blocoCartao`, `#blocoPix`, `#pixCobranca`, `#map`, bottom-nav mobile.
 
-## Correção do login do admin (PR #16)
 
-Antes: tentar logar no painel interno de `/admin` com `admin@ondetem.com` / `123456` retornava **"E-mail ou senha incorretos."**. O form enviava `{ email, senha }`, mas `POST /api/login` exige `{ email, senha, tipo: 'admin' }`. Além disso, logar pelo `/login` (aba Admin) redirecionava para `/admin` mas o painel continuava pedindo login de novo, porque `admin.html` não carregava `auth-guard.js` e não conhecia a sessão do `OndeTemAuth`.
-
-Depois (PR #16 merged):
-- `admin.html` passou a incluir `<script src="auth-guard.js"></script>`.
-- Nova função `verificarLoginAdmin()` faz **SSO**: se já existe `OndeTemAuth.obterUsuario()` com `tipo === 'admin'`, pula o form e abre o painel direto.
-- O form interno continua disponível como fallback, agora enviando `tipo: 'admin'` e persistindo `token + usuario` via `OndeTemAuth.salvarSessao()`, o que permite o logout invalidar a sessão server-side via `POST /api/logout`.
-- Logout distingue os dois caminhos: se houver sessão SSO de admin, chama `OndeTemAuth.logout()` (que também redireciona para `/login`); caso contrário faz apenas o cleanup do `sessionStorage` + troca a UI para o form.
-
----
-
-## Resultados do teste E2E da home redesenhada (PR #11)
-
-Execução em `http://localhost:3000`, branch `devin/1776719299-home-redesign`, Chrome maximizado, gravação única com anotações. Plano em [`test-plan-redesign.md`](./test-plan-redesign.md) e relatório em [`test-report.md`](./test-report.md).
-
-**Regressão crítica coberta:** a redesign trocou `btn-danger` → `btn-primary-onde` e adicionou um `<i class="bi bi-calendar2-heart">` dentro do botão Agendar. O handler antigo em `script.js` fazia `e.target.classList.contains('btn-danger')`, que falhava tanto pela classe nova quanto por cliques caindo no `<i>` filho. O fix (commit `ef0f30a`) usa `e.target.closest('.card-salao .card-body .btn')`, resiliente a classes e children.
-
-| # | Asserção | Resultado |
-|---|----------|-----------|
-| A1 | Hero em Playfair com "agendado em cliques." + 2 cards flutuantes (+10.000, 4.9/5) | ✅ passed |
-| A2 | 4 `.stat` na stats bar | ✅ passed |
-| A3 | 6 `.treatment-card` em "Tratamentos em alta" | ✅ passed |
-| A4 | Footer com 3 `h6` (Empresa / Para você / Para seu negócio) | ✅ passed |
-| B1 | Filtro "Cabelo" esconde Clínica Flores e Espaço Glow | ✅ passed |
-| C1 | Clique em **Agendar** abre `#modalAgendamento` (valida fix do `btn-primary-onde`) | ✅ passed |
-| C2 | Pix gera `#pixCobranca` com QR + copia-e-cola + botão "Já paguei" | ✅ passed |
-| C3 | "Já paguei" confirma e exibe toast + notificação desktop | ✅ passed |
-| D1 | Mapa Leaflet carrega tiles OSM + marcador azul do usuário + marcador roxo da empresa | ✅ passed |
-
----
 
 ## Resultados do teste E2E da home Airbnb (PR #15)
 
@@ -344,33 +273,6 @@ Três novas páginas adicionadas ao PWA "Onde Tem?":
 
 Navegação atualizada: `login.html` agora possui os botões "Cadastrar como Usuário" e "Cadastrar como Empresa". `index.html` possui um link "Admin" no cabeçalho.
 
-## Fluxo Principal: Cadastro de Ponta a Ponta + Verificação do Admin
-
-### Teste 1: Navegação do Login para as Páginas de Cadastro
-**Passos:**
-1. Navegue para `http://localhost:3000/login`
-2. Verifique se a página exibe dois novos botões: "Cadastrar como Usuário" e "Cadastrar como Empresa"
-3. Clique em "Cadastrar como Usuário"
-
-**Critérios de aprovação:** O navegador redireciona para `/cadastro-usuario.html` e exibe o formulário com o título "Cadastro de Usuário"
-
-### Teste 2: Formulário de Cadastro de Usuário — Envio com Dados Válidos
-**Passos:**
-1. Em `/cadastro-usuario`, preencha:
-   - Nome Completo: "Maria Silva"
-   - CPF: "123.456.789-00"
-   - Data de Nascimento: "1990-05-15"
-   - E-mail: "maria@teste.com"
-   - Telefone: "(21) 99999-1234"
-   - Senha: "Teste@123"
-   - Confirmar Senha: "Teste@123"
-   - Marque o checkbox "termos de uso"
-2. Clique no botão "Criar Minha Conta"
-
-**Critérios de aprovação:**
-- Um banner de alerta verde aparece no topo com um texto contendo "Cadastro realizado com sucesso!"
-- O botão exibe temporariamente um *spinner* com o texto "Cadastrando..." durante o envio
-- Após cerca de 2 segundos, a página redireciona para `login.html`
 
 ### Teste 3: Formulário de Cadastro de Usuário — Indicador de Força da Senha
 **Passos:**
@@ -441,48 +343,6 @@ Navegação atualizada: `login.html` agora possui os botões "Cadastrar como Usu
 - Um marcador **roxo** aparece na posição cadastrada
 - Ao clicar no marcador, o popup mostra nome, categorias, endereço e (se a geolocalização estiver concedida) a distância aproximada até o usuário
 
-### Teste 5: Login de Admin — Credenciais Corretas
-**Passos:**
-1. Navegue para `http://localhost:3000/admin`
-2. Verifique se o formulário de login está visível com o título "Painel Admin"
-3. Insira o email: "admin@ondetem.com"
-4. Insira a senha: "123456"
-5. Clique no botão "Entrar"
-
-**Critérios de aprovação:**
-- O formulário de login desaparece
-- O painel do dashboard admin aparece com uma barra lateral mostrando: Dashboard, Usuários, Empresas, Agendamentos, Configurações
-- O Dashboard exibe 4 cards de estatísticas: "Usuários Cadastrados", "Empresas Ativas", "Agendamentos" e "Receita Estimada"
-- A barra superior exibe o título "Dashboard" e o e-mail "admin@ondetem.com"
-
-### Teste 6: Login de Admin — Credenciais Incorretas
-**Passos:**
-1. Navegue para `http://localhost:3000/admin` (página recarregada/nova)
-2. Insira o email: "wrong@email.com"
-3. Insira a senha: "wrongpass"
-4. Clique em "Entrar"
-
-**Critérios de aprovação:**
-- O formulário de login permanece visível (sem troca de painel)
-- Um texto de erro em vermelho aparece dizendo "E-mail ou senha incorretos."
-
-### Teste 7: Painel Admin — Navegação da Barra Lateral
-**Passos:**
-1. Após o login bem-sucedido no admin, clique em "Usuários" na barra lateral
-2. Em seguida, clique em "Empresas" na barra lateral
-3. Depois, clique em "Configurações" na barra lateral
-
-**Critérios de aprovação:**
-- Clicar em "Usuários" → o título da barra superior muda para "Usuários" e exibe a tabela de usuários com "Nenhum usuário cadastrado"
-- Clicar em "Empresas" → o título da barra superior muda para "Empresas" e exibe a tabela de empresas com "Nenhuma empresa cadastrada"
-- Clicar em "Configurações" → o título da barra superior muda para "Configurações", exibe o campo de nome da plataforma com o valor "Onde Tem?" e o e-mail de suporte "suporte@ondetem.com"
-
-### Teste 8: Página Inicial (Index) — Link do Admin no Cabeçalho
-**Passos:**
-1. Navegue para `http://localhost:3000/`
-2. Verifique o cabeçalho em busca de um botão/link para "Admin"
-
-**Critérios de aprovação:** O cabeçalho exibe um link/botão "Admin" que aponta para `admin.html`
 
 ## Evidências de Código
 - `server.js` linhas 35-45: Novas rotas para `/cadastro-usuario`, `/cadastro-empresa`, `/admin`
