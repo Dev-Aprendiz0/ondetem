@@ -34,7 +34,6 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f8f9fa;
     color: #333;
-    padding-bottom: 70px;
     transition: all var(--duracao-transicao) var(--easing);
 }
 
@@ -581,12 +580,14 @@ header.sticky-top {
    15. RESPONSIVIDADE
    ============================================ */
 
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
     body {
+        /* espaço para a bottom-nav fixa (.bottom-nav é d-md-none) */
         padding-bottom: 80px;
     }
 
-    header {
+    /* oculta só o header desktop (d-none d-md-block); o header mobile (d-md-none) fica visível */
+    header.d-md-block {
         display: none;
     }
 
