@@ -32,6 +32,9 @@
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#553A73">
@@ -39,154 +42,182 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 
-<body>
+<body class="airbnb-home">
 
-  <header class="bg-white py-3 border-bottom sticky-top d-none d-md-block">
-    <div class="container d-flex justify-content-between align-items-center">
-      <div class="logo d-flex align-items-center">
-        <i class="bi bi-b-circle-fill fs-2 text-danger me-2"></i>
-        <span class="fs-4 fw-bold text-dark">Onde tem?</span>
+  <!-- ========== HEADER DESKTOP (estilo Airbnb) ========== -->
+  <header class="ot-header d-none d-md-block">
+    <div class="ot-header-inner">
+      <a class="ot-logo" href="/" aria-label="Onde Tem?">
+        <i class="bi bi-b-circle-fill"></i>
+        <span>Onde tem?</span>
+      </a>
+
+      <!-- Pill de busca estilo Airbnb — um único input ligado ao script de filtro -->
+      <div class="search-bar ot-search-pill" role="search">
+        <label class="ot-search-seg ot-search-seg-main">
+          <span class="ot-search-label">Buscar</span>
+          <input type="search" placeholder="Serviço, salão ou profissional perto de você">
+        </label>
+        <button class="ot-search-btn" type="button" aria-label="Buscar">
+          <i class="bi bi-search"></i>
+        </button>
       </div>
-      <div class="search-bar w-50">
-        <input type="search" class="form-control rounded-pill" placeholder="Busque por serviços ou profissionais">
-      </div>
-      <div class="header-action d-flex align-items-center gap-3">
-        <a href="login.html" class="btn btn-danger rounded-pill px-4">Login</a>
-      </div>
+
+      <nav class="ot-actions">
+        <a href="cadastro-empresa.html" class="ot-action-link d-none d-lg-inline">Anuncie seu salão</a>
+        <a href="login.html" class="ot-user-btn" aria-label="Entrar ou cadastrar">
+          <i class="bi bi-list"></i>
+          <span class="ot-user-avatar"><i class="bi bi-person-fill"></i></span>
+        </a>
+      </nav>
     </div>
   </header>
 
-  <header class="bg-white py-2 border-bottom d-md-none sticky-top">
-    <div class="container-fluid d-flex justify-content-between align-items-center">
-        <div class="logo d-flex align-items-center">
-            <i class="bi bi-b-circle-fill fs-2 text-danger me-2"></i>
-            <span class="fs-4 fw-bold text-dark">Onde tem?</span>
-        </div>
-        <div class="search-container-mobile d-flex align-items-center gap-2">
-            <input type="search" id="input-busca-mobile" class="form-control rounded-pill d-none" placeholder="Buscar...">
-            <div class="search-icon fs-3 text-muted ms-2" id="btn-lupa-mobile" style="cursor: pointer;">
-              <i class="bi bi-search"></i>
-            </div>
-        </div>
+  <!-- ========== HEADER MOBILE ========== -->
+  <header class="ot-header-mobile d-md-none">
+    <a class="ot-logo" href="/">
+      <i class="bi bi-b-circle-fill"></i>
+      <span>Onde tem?</span>
+    </a>
+    <div class="search-bar ot-search-mobile">
+      <i class="bi bi-search"></i>
+      <input type="search" id="input-busca-mobile" placeholder="Buscar serviço ou salão">
+      <span id="btn-lupa-mobile" class="d-none"></span>
     </div>
   </header>
 
-  <section class="hero bg-light py-5">
-    <div class="container text-center text-md-start position-relative">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <h1 class="display-6 fw-bold">Seu momento de beleza,</h1>
-                <h1 class="display-6 fw-bold">agendado em cliques.</h1>
-                <p class="lead text-muted d-none d-md-block">Encontre os melhores profissionais perto de você.</p>
-            </div>
-            <div class="col-md-4 position-relative d-none d-md-block"></div>
-        </div>
-    </div>
-  </section>
-
-<!-- Categorias -->
-  <section class="categories py-4 bg-white">
-    <div class="container">
-      <div class="categories-wrapper">
-        <div class="category-item text-center">
-          <div class="icon-circle shadow"><i class="bi bi-scissors"></i></div>
-          <p>Cabelo</p>
-        </div>
-        <div class="category-item text-center">
-          <div class="icon-circle shadow"><i class="bi bi-hand-index-thumb"></i></div>
-          <p>Unhas</p>
-        </div>
-        <div class="category-item text-center">
-          <div class="icon-circle shadow"><i class="bi bi-gender-female"></i></div>
-          <p>Depilação</p>
-        </div>
-        <div class="category-item text-center">
-          <div class="icon-circle shadow"><i class="bi bi-eye"></i></div>
-          <p>Sobrancelhas</p>
-        </div>
-        <div class="category-item text-center">
-          <div class="icon-circle shadow"><i class="bi bi-person-hearts"></i></div>
-          <p>Massagem</p>
-        </div>
-        <div class="category-item text-center">
-          <div class="icon-circle shadow"><i class="bi bi-person-fill"></i></div>
-          <p>Rosto</p>
-        </div>
+  <!-- ========== BARRA DE CATEGORIAS (estilo Airbnb) ========== -->
+  <section class="ot-categories-bar">
+    <div class="ot-categories-track">
+      <div class="category-item">
+        <div class="icon-circle"><i class="bi bi-scissors"></i></div>
+        <p>Cabelo</p>
+      </div>
+      <div class="category-item">
+        <div class="icon-circle"><i class="bi bi-hand-index-thumb"></i></div>
+        <p>Unhas</p>
+      </div>
+      <div class="category-item">
+        <div class="icon-circle"><i class="bi bi-gender-female"></i></div>
+        <p>Depilação</p>
+      </div>
+      <div class="category-item">
+        <div class="icon-circle"><i class="bi bi-eye"></i></div>
+        <p>Sobrancelhas</p>
+      </div>
+      <div class="category-item">
+        <div class="icon-circle"><i class="bi bi-person-hearts"></i></div>
+        <p>Massagem</p>
+      </div>
+      <div class="category-item">
+        <div class="icon-circle"><i class="bi bi-person-fill"></i></div>
+        <p>Rosto</p>
       </div>
     </div>
   </section>
 
-<!-- Cards com Salões e Clínicas -->  
-<section class="listings py-5 bg-light">
-  <div class="container">
-    <h2 class="mb-4">Salões e Clínicas em Destaque</h2>
-    <div class="row g-4 flex-nowrap overflow-auto pb-3">
-      
-      <div class="col-10 col-md-6 col-lg-4 card-salao" data-index="0">
-        <div class="card service-card shadow h-100">
-          <img src="https://frizzar.com.br/blog/wp-content/uploads/2025/01/salao-de-beleza-moderno.webp" class="card-img-top" alt="Studio Bella Donna" style="height: 200px; object-fit: cover;">
-          <div class="card-body d-flex flex-column">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <h5 class="card-title mb-0">Studio Bella Donna</h5>
-              <span class="text-muted fs-6">4.8 <i class="bi bi-star-fill text-warning"></i> (220 m)</span>
-            </div>
-            <p class="card-text text-muted mb-3">Cabelo • Unhas • Sobrancelhas</p>
-            <div class="services-list mb-3">
-              <p>Corte Feminino • R$ 120,00</p>
-              <p>Manicure Simples • R$ 35,00</p>
-            </div>
-            <div class="mt-auto">
-              <button class="btn btn-danger w-100 rounded-pill">Agendar</button>
-            </div>
-          </div>
-        </div>
-      </div>
+  <!-- ========== GRID DE PRODUTOS (produto-first, estilo Airbnb) ========== -->
+  <main class="listings ot-grid-wrap">
+    <div class="ot-grid-container">
+      <div class="row g-4">
 
-      <div class="col-10 col-md-6 col-lg-4 card-salao" data-index="1">
-        <div class="card service-card shadow h-100">
-          <img src="https://s2.glbimg.com/Ha2q-YYa3pCWtwM4E51zi_p-POI=/940x523/e.glbimg.com/og/ed/f/original/2019/02/20/blow-dry-bar-del-mar-chairs-counter-853427.jpg" class="card-img-top" alt="Clínica Estética Flores" style="height: 200px; object-fit: cover;">
-          <div class="card-body d-flex flex-column">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <h5 class="card-title mb-0">Clínica Estética Flores</h5>
-              <span class="text-muted fs-6">4.9 <i class="bi bi-star-fill text-warning"></i> (1.1 km)</span>
+        <!-- Card 0 -->
+        <div class="col-12 col-sm-6 col-lg-4 col-xxl-3 card-salao" data-index="0">
+          <article class="card service-card ot-card">
+            <div class="ot-card-media">
+              <img src="https://frizzar.com.br/blog/wp-content/uploads/2025/01/salao-de-beleza-moderno.webp" alt="Studio Bella Donna">
+              <button class="ot-fav" type="button" aria-label="Favoritar">
+                <i class="bi bi-heart"></i>
+              </button>
+              <span class="ot-badge">Verificado</span>
             </div>
-            <p class="card-text text-muted mb-3">Rosto • Depilação • Massagem</p>
-            <div class="services-list mb-3">
-              <p>Limpeza de Pele • R$ 150,00</p>
-              <p>Drenagem Linfática • R$ 180,00</p>
+            <div class="card-body ot-card-body">
+              <div class="ot-card-row">
+                <h5 class="card-title">Studio Bella Donna</h5>
+                <span class="ot-rating"><i class="bi bi-star-fill"></i> 4.8</span>
+              </div>
+              <p class="card-text ot-card-loc">Saquarema, RJ · 220 m</p>
+              <p class="card-text ot-card-tags">Cabelo · Unhas · Sobrancelhas</p>
+              <div class="ot-card-footer">
+                <p class="ot-card-price"><strong>R$ 35</strong> <span>a partir de</span></p>
+                <button class="btn btn-danger rounded-pill">Agendar</button>
+              </div>
             </div>
-            <div class="mt-auto">
-              <button class="btn btn-danger w-100 rounded-pill">Agendar</button>
-            </div>
-          </div>
+          </article>
         </div>
-      </div>
 
-      <div class="col-10 col-md-6 col-lg-4 card-salao" data-index="2">
-        <div class="card service-card shadow h-100">
-          <img src="https://ferrante.com.br/wp-content/uploads/2024/11/decoracao-minimalista-salao.jpg.jpeg" class="card-img-top" alt="Espaço Glow" style="height: 200px; object-fit: cover;">
-          <div class="card-body d-flex flex-column">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <h5 class="card-title mb-0">Espaço Glow</h5>
-              <span class="text-muted fs-6">4.7 <i class="bi bi-star-fill text-warning"></i> (500 m)</span>
+        <!-- Card 1 -->
+        <div class="col-12 col-sm-6 col-lg-4 col-xxl-3 card-salao" data-index="1">
+          <article class="card service-card ot-card">
+            <div class="ot-card-media">
+              <img src="https://s2.glbimg.com/Ha2q-YYa3pCWtwM4E51zi_p-POI=/940x523/e.glbimg.com/og/ed/f/original/2019/02/20/blow-dry-bar-del-mar-chairs-counter-853427.jpg" alt="Clínica Estética Flores">
+              <button class="ot-fav" type="button" aria-label="Favoritar">
+                <i class="bi bi-heart"></i>
+              </button>
+              <span class="ot-badge ot-badge-top">Top avaliado</span>
             </div>
-            <p class="card-text text-muted mb-3">Unhas • Sobrancelhas • Rosto</p>
-            <div class="services-list mb-3">
-              <p>Design de Sobrancelhas • R$ 60,00</p>
-              <p>Alongamento em Gel • R$ 160,00</p>
+            <div class="card-body ot-card-body">
+              <div class="ot-card-row">
+                <h5 class="card-title">Clínica Estética Flores</h5>
+                <span class="ot-rating"><i class="bi bi-star-fill"></i> 4.9</span>
+              </div>
+              <p class="card-text ot-card-loc">Saquarema, RJ · 1,1 km</p>
+              <p class="card-text ot-card-tags">Rosto · Depilação · Massagem</p>
+              <div class="ot-card-footer">
+                <p class="ot-card-price"><strong>R$ 150</strong> <span>a partir de</span></p>
+                <button class="btn btn-danger rounded-pill">Agendar</button>
+              </div>
             </div>
-            <div class="mt-auto">
-              <button class="btn btn-danger w-100 rounded-pill">Agendar</button>
-            </div>
-          </div>
+          </article>
         </div>
-      </div>
 
+        <!-- Card 2 -->
+        <div class="col-12 col-sm-6 col-lg-4 col-xxl-3 card-salao" data-index="2">
+          <article class="card service-card ot-card">
+            <div class="ot-card-media">
+              <img src="https://ferrante.com.br/wp-content/uploads/2024/11/decoracao-minimalista-salao.jpg.jpeg" alt="Espaço Glow">
+              <button class="ot-fav" type="button" aria-label="Favoritar">
+                <i class="bi bi-heart"></i>
+              </button>
+            </div>
+            <div class="card-body ot-card-body">
+              <div class="ot-card-row">
+                <h5 class="card-title">Espaço Glow</h5>
+                <span class="ot-rating"><i class="bi bi-star-fill"></i> 4.7</span>
+              </div>
+              <p class="card-text ot-card-loc">Saquarema, RJ · 500 m</p>
+              <p class="card-text ot-card-tags">Unhas · Sobrancelhas · Rosto</p>
+              <div class="ot-card-footer">
+                <p class="ot-card-price"><strong>R$ 60</strong> <span>a partir de</span></p>
+                <button class="btn btn-danger rounded-pill">Agendar</button>
+              </div>
+            </div>
+          </article>
+        </div>
+
+      </div>
     </div>
-  </div>
-</section>
+  </main>
 
-<!-- Modal exibido quando o usuário tenta agendar sem estar logado -->
+  <!-- ========== SEÇÃO DO MAPA (colapsável, estilo "Mostrar no mapa" do Airbnb) ========== -->
+  <section class="ot-map-section">
+    <div class="ot-map-header">
+      <div>
+        <h2>Salões perto de você</h2>
+        <p class="text-muted mb-0">Marcadores mostram estabelecimentos em destaque e empresas cadastradas.</p>
+      </div>
+      <button id="btnToggleMapa" type="button" class="btn btn-dark rounded-pill">
+        <i class="bi bi-map"></i> <span>Ocultar mapa</span>
+      </button>
+    </div>
+    <div id="mapaWrapper" class="ot-map-wrapper">
+      <div id="map"></div>
+    </div>
+  </section>
+
+  <!-- ========== MODAIS (mantidos sem mudança de IDs) ========== -->
+
+  <!-- Modal exibido quando o usuário tenta agendar sem estar logado -->
   <div class="modal fade" id="modalLoginNecessario" tabindex="-1" aria-labelledby="modalLoginNecessarioLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -213,136 +244,133 @@
     </div>
   </div>
 
-<!-- Modal ao clicar em agendar -->  
+  <!-- Modal ao clicar em agendar -->
   <div class="modal fade" id="modalAgendamento" tabindex="-1" aria-labelledby="modalAgendamentoLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modalAgendamentoLabel">Finalizar Agendamento</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <form id="formAgendamento">
-          <div class="mb-3">
-            <label class="form-label">Escolha o dia:</label>
-            <input type="date" class="form-control" id="dataAgendamento" required>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label">Horário disponível:</label>
-            <select class="form-select" id="horaAgendamento" required>
-              <option value="">Selecione...</option>
-              <option>09:00</option>
-              <option>10:00</option>
-              <option>14:00</option>
-              <option>16:00</option>
-            </select>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label" for="valorAgendamento">Valor a pagar (R$):</label>
-            <input type="number" step="0.01" min="0.01" class="form-control" id="valorAgendamento" value="60.00" required>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label">Forma de Pagamento:</label>
-            <select class="form-select" id="metodoPagamento" required>
-              <option value="pix">Pix</option>
-              <option value="cartao">Cartão de Crédito</option>
-              <option value="local">Pagar no Estabelecimento</option>
-            </select>
-          </div>
-
-          <!-- Bloco dinâmico: Cartão de Crédito -->
-          <div id="blocoCartao" class="border rounded p-3 mb-3 bg-light" hidden>
-            <div class="mb-2">
-              <label class="form-label small mb-1" for="cartaoNumero">Número do cartão</label>
-              <input type="text" inputmode="numeric" autocomplete="cc-number" class="form-control" id="cartaoNumero" placeholder="0000 0000 0000 0000" maxlength="23">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalAgendamentoLabel">Finalizar Agendamento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formAgendamento">
+            <div class="mb-3">
+              <label class="form-label">Escolha o dia:</label>
+              <input type="date" class="form-control" id="dataAgendamento" required>
             </div>
-            <div class="mb-2">
-              <label class="form-label small mb-1" for="cartaoNome">Nome impresso no cartão</label>
-              <input type="text" autocomplete="cc-name" class="form-control" id="cartaoNome" placeholder="Como aparece no cartão">
+
+            <div class="mb-3">
+              <label class="form-label">Horário disponível:</label>
+              <select class="form-select" id="horaAgendamento" required>
+                <option value="">Selecione...</option>
+                <option>09:00</option>
+                <option>10:00</option>
+                <option>14:00</option>
+                <option>16:00</option>
+              </select>
             </div>
-            <div class="row g-2">
-              <div class="col-5">
-                <label class="form-label small mb-1" for="cartaoValidade">Validade</label>
-                <input type="text" inputmode="numeric" autocomplete="cc-exp" class="form-control" id="cartaoValidade" placeholder="MM/AA" maxlength="5">
+
+            <div class="mb-3">
+              <label class="form-label" for="valorAgendamento">Valor a pagar (R$):</label>
+              <input type="number" step="0.01" min="0.01" class="form-control" id="valorAgendamento" value="60.00" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Forma de Pagamento:</label>
+              <select class="form-select" id="metodoPagamento" required>
+                <option value="pix">Pix</option>
+                <option value="cartao">Cartão de Crédito</option>
+                <option value="local">Pagar no Estabelecimento</option>
+              </select>
+            </div>
+
+            <!-- Bloco dinâmico: Cartão de Crédito -->
+            <div id="blocoCartao" class="border rounded p-3 mb-3 bg-light" hidden>
+              <div class="mb-2">
+                <label class="form-label small mb-1" for="cartaoNumero">Número do cartão</label>
+                <input type="text" inputmode="numeric" autocomplete="cc-number" class="form-control" id="cartaoNumero" placeholder="0000 0000 0000 0000" maxlength="23">
               </div>
-              <div class="col-3">
-                <label class="form-label small mb-1" for="cartaoCvv">CVV</label>
-                <input type="text" inputmode="numeric" autocomplete="cc-csc" class="form-control" id="cartaoCvv" placeholder="123" maxlength="4">
+              <div class="mb-2">
+                <label class="form-label small mb-1" for="cartaoNome">Nome impresso no cartão</label>
+                <input type="text" autocomplete="cc-name" class="form-control" id="cartaoNome" placeholder="Como aparece no cartão">
               </div>
-              <div class="col-4">
-                <label class="form-label small mb-1" for="cartaoParcelas">Parcelas</label>
-                <select class="form-select" id="cartaoParcelas">
-                  <option value="1">1x</option>
-                  <option value="2">2x</option>
-                  <option value="3">3x</option>
-                  <option value="6">6x</option>
-                  <option value="12">12x</option>
-                </select>
+              <div class="row g-2">
+                <div class="col-5">
+                  <label class="form-label small mb-1" for="cartaoValidade">Validade</label>
+                  <input type="text" inputmode="numeric" autocomplete="cc-exp" class="form-control" id="cartaoValidade" placeholder="MM/AA" maxlength="5">
+                </div>
+                <div class="col-3">
+                  <label class="form-label small mb-1" for="cartaoCvv">CVV</label>
+                  <input type="text" inputmode="numeric" autocomplete="cc-csc" class="form-control" id="cartaoCvv" placeholder="123" maxlength="4">
+                </div>
+                <div class="col-4">
+                  <label class="form-label small mb-1" for="cartaoParcelas">Parcelas</label>
+                  <select class="form-select" id="cartaoParcelas">
+                    <option value="1">1x</option>
+                    <option value="2">2x</option>
+                    <option value="3">3x</option>
+                    <option value="6">6x</option>
+                    <option value="12">12x</option>
+                  </select>
+                </div>
+              </div>
+              <div class="small text-muted mt-2">
+                <i class="bi bi-info-circle"></i>
+                Ambiente de simulação. Use <code>4111 1111 1111 1111</code> para aprovar
+                ou qualquer cartão terminando em <code>0000</code> para testar recusa.
               </div>
             </div>
-            <div class="small text-muted mt-2">
-              <i class="bi bi-info-circle"></i>
-              Ambiente de simulação. Use <code>4111 1111 1111 1111</code> para aprovar
-              ou qualquer cartão terminando em <code>0000</code> para testar recusa.
-            </div>
-          </div>
 
-          <!-- Bloco dinâmico: Pix -->
-          <div id="blocoPix" class="border rounded p-3 mb-3 bg-light text-center" hidden>
-            <div id="pixInicial">
-              <i class="bi bi-qr-code fs-1 text-danger"></i>
-              <p class="small text-muted mb-0">Ao confirmar, geraremos uma cobrança Pix simulada com QR Code e código "copia e cola".</p>
-            </div>
-            <div id="pixCobranca" hidden>
-              <p class="small mb-2"><b>Escaneie o QR Code ou copie o código abaixo:</b></p>
-              <div id="pixQrCode" class="d-flex justify-content-center mb-2"></div>
-              <div class="input-group input-group-sm mb-2">
-                <input type="text" id="pixCopiaECola" class="form-control font-monospace" readonly>
-                <button type="button" class="btn btn-outline-secondary" id="btnCopiarPix"><i class="bi bi-clipboard"></i></button>
+            <!-- Bloco dinâmico: Pix -->
+            <div id="blocoPix" class="border rounded p-3 mb-3 bg-light text-center" hidden>
+              <div id="pixInicial">
+                <i class="bi bi-qr-code fs-1 text-danger"></i>
+                <p class="small text-muted mb-0">Ao confirmar, geraremos uma cobrança Pix simulada com QR Code e código "copia e cola".</p>
               </div>
-              <p class="small text-muted mb-2">Expira em <span id="pixExpira">30 min</span>.</p>
-              <button type="button" class="btn btn-success btn-sm w-100" id="btnPagueiPix">
-                <i class="bi bi-check-circle"></i> Já paguei (simular confirmação)
-              </button>
+              <div id="pixCobranca" hidden>
+                <p class="small mb-2"><b>Escaneie o QR Code ou copie o código abaixo:</b></p>
+                <div id="pixQrCode" class="d-flex justify-content-center mb-2"></div>
+                <div class="input-group input-group-sm mb-2">
+                  <input type="text" id="pixCopiaECola" class="form-control font-monospace" readonly>
+                  <button type="button" class="btn btn-outline-secondary" id="btnCopiarPix"><i class="bi bi-clipboard"></i></button>
+                </div>
+                <p class="small text-muted mb-2">Expira em <span id="pixExpira">30 min</span>.</p>
+                <button type="button" class="btn btn-success btn-sm w-100" id="btnPagueiPix">
+                  <i class="bi bi-check-circle"></i> Já paguei (simular confirmação)
+                </button>
+              </div>
             </div>
-          </div>
 
-          <hr>
-          <div id="statusPagamento" class="text-center small mb-2"></div>
-          <button type="submit" class="btn btn-danger w-100 rounded-pill" id="btnConfirmarPagamento">Confirmar e Pagar</button>
-        </form>
+            <hr>
+            <div id="statusPagamento" class="text-center small mb-2"></div>
+            <button type="submit" class="btn btn-danger w-100 rounded-pill" id="btnConfirmarPagamento">Confirmar e Pagar</button>
+          </form>
+        </div>
       </div>
     </div>
   </div>
-  </div>
 
-<!-- Barra de navegação mobile --> 
+  <!-- ========== BOTTOM-NAV MOBILE ========== -->
   <nav class="fixed-bottom bg-white d-md-none border-top py-2 bottom-nav">
     <div class="container-fluid d-flex justify-content-around text-center">
       <a href="index.html" class="nav-link-custom text-danger">
-          <i class="bi bi-house-door-fill fs-4"></i>
-          <span class="small d-block">Início</span>
+        <i class="bi bi-house-door-fill fs-4"></i>
+        <span class="small d-block">Início</span>
       </a>
       <a href="#" class="nav-link-custom text-muted">
-          <i class="bi bi-search fs-4"></i>
-          <span class="small d-block">Buscar</span>
+        <i class="bi bi-search fs-4"></i>
+        <span class="small d-block">Buscar</span>
       </a>
       <a href="agendamentos.html" class="nav-link-custom text-muted">
-          <i class="bi bi-calendar-check fs-4"></i>
-          <span class="small d-block">Agendamentos</span>
+        <i class="bi bi-calendar-check fs-4"></i>
+        <span class="small d-block">Agendamentos</span>
       </a>
       <a href="login.html" class="nav-link-custom text-muted">
-          <i class="bi bi-person fs-4"></i>
-          <span class="small d-block">Perfil</span>
+        <i class="bi bi-person fs-4"></i>
+        <span class="small d-block">Perfil</span>
       </a>
     </div>
   </nav>
-
-<!-- Mapa -->   
-  <div id="map"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="auth-guard.js"></script>
@@ -350,5 +378,21 @@
   <script src="utils.js"></script>
   <script src="script.js"></script>
   <script src="app.js"></script>
+
+  <!-- Toggle do mapa (apenas UI, não mexe em script.js) -->
+  <script>
+    (function () {
+      const btn = document.getElementById('btnToggleMapa');
+      const wrapper = document.getElementById('mapaWrapper');
+      if (!btn || !wrapper) return;
+      btn.addEventListener('click', () => {
+        const hidden = wrapper.classList.toggle('is-hidden');
+        btn.querySelector('span').textContent = hidden ? 'Mostrar mapa' : 'Ocultar mapa';
+        if (!hidden && window.leafletMap && typeof window.leafletMap.invalidateSize === 'function') {
+          setTimeout(() => window.leafletMap.invalidateSize(), 150);
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
