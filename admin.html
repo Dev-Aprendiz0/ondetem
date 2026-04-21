@@ -712,6 +712,12 @@
           const resultado = await response.json();
 
           if (response.ok) {
+            // Persiste token+usuário para que o logout possa chamar POST /api/logout
+            // e invalidar a sessão no servidor. Sem isso, cada login via form interno
+            // deixa uma entrada órfã em db.sessoes.
+            if (window.OndeTemAuth && resultado.token && resultado.usuario) {
+              OndeTemAuth.salvarSessao(resultado.token, resultado.usuario);
+            }
             sessionStorage.setItem(STORAGE_KEYS_ADMIN.adminLogado, email);
             localStorage.setItem(STORAGE_KEYS_ADMIN.ultimoAcesso, new Date().toLocaleString('pt-BR'));
             mostrarPainel(email);
