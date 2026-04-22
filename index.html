@@ -120,13 +120,29 @@
   <!-- ========== GRID DE PRODUTOS (produto-first, estilo Airbnb) ========== -->
   <main class="listings ot-grid-wrap">
     <div class="ot-grid-container">
+
+      <!-- Cabeçalho do grid (estilo Airbnb) -->
+      <header class="ot-grid-heading">
+        <div>
+          <h1>Salões e clínicas perto de você</h1>
+          <p class="text-muted mb-0">Descubra profissionais verificados, agende em cliques e pague com Pix, cartão ou no local.</p>
+        </div>
+        <div class="ot-grid-heading-meta">
+          <span class="ot-pill-filter"><i class="bi bi-sliders"></i> Filtros</span>
+          <span class="ot-pill-filter ot-pill-filter-toggle">
+            <span>Exibir preço total</span>
+            <span class="ot-switch" aria-hidden="true"><span class="ot-switch-dot"></span></span>
+          </span>
+        </div>
+      </header>
+
       <div class="row g-4">
 
         <!-- Card 0 -->
         <div class="col-12 col-sm-6 col-lg-4 col-xxl-3 card-salao" data-index="0">
           <article class="card service-card ot-card">
             <div class="ot-card-media">
-              <img src="https://frizzar.com.br/blog/wp-content/uploads/2025/01/salao-de-beleza-moderno.webp" alt="Studio Bella Donna">
+              <img src="https://frizzar.com.br/blog/wp-content/uploads/2025/01/salao-de-beleza-moderno.webp" alt="Studio Bella Donna" loading="lazy">
               <button class="ot-fav" type="button" aria-label="Favoritar">
                 <i class="bi bi-heart"></i>
               </button>
@@ -151,7 +167,7 @@
         <div class="col-12 col-sm-6 col-lg-4 col-xxl-3 card-salao" data-index="1">
           <article class="card service-card ot-card">
             <div class="ot-card-media">
-              <img src="https://s2.glbimg.com/Ha2q-YYa3pCWtwM4E51zi_p-POI=/940x523/e.glbimg.com/og/ed/f/original/2019/02/20/blow-dry-bar-del-mar-chairs-counter-853427.jpg" alt="Clínica Estética Flores">
+              <img src="https://s2.glbimg.com/Ha2q-YYa3pCWtwM4E51zi_p-POI=/940x523/e.glbimg.com/og/ed/f/original/2019/02/20/blow-dry-bar-del-mar-chairs-counter-853427.jpg" alt="Clínica Estética Flores" loading="lazy">
               <button class="ot-fav" type="button" aria-label="Favoritar">
                 <i class="bi bi-heart"></i>
               </button>
@@ -176,7 +192,7 @@
         <div class="col-12 col-sm-6 col-lg-4 col-xxl-3 card-salao" data-index="2">
           <article class="card service-card ot-card">
             <div class="ot-card-media">
-              <img src="https://ferrante.com.br/wp-content/uploads/2024/11/decoracao-minimalista-salao.jpg.jpeg" alt="Espaço Glow">
+              <img src="https://ferrante.com.br/wp-content/uploads/2024/11/decoracao-minimalista-salao.jpg.jpeg" alt="Espaço Glow" loading="lazy">
               <button class="ot-fav" type="button" aria-label="Favoritar">
                 <i class="bi bi-heart"></i>
               </button>
@@ -190,6 +206,179 @@
               <p class="card-text ot-card-tags">Unhas · Sobrancelhas · Rosto</p>
               <div class="ot-card-footer">
                 <p class="ot-card-price"><strong>R$ 60</strong> <span>a partir de</span></p>
+                <button class="btn btn-danger rounded-pill">Agendar</button>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="col-12 col-sm-6 col-lg-4 col-xxl-3 card-salao" data-index="3">
+          <article class="card service-card ot-card">
+            <div class="ot-card-media">
+              <img src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=900&q=80" alt="Barbearia Vintage Co." loading="lazy">
+              <button class="ot-fav" type="button" aria-label="Favoritar">
+                <i class="bi bi-heart"></i>
+              </button>
+              <span class="ot-badge">Favorito</span>
+            </div>
+            <div class="card-body ot-card-body">
+              <div class="ot-card-row">
+                <h5 class="card-title">Barbearia Vintage Co.</h5>
+                <span class="ot-rating"><i class="bi bi-star-fill"></i> 4.8</span>
+              </div>
+              <p class="card-text ot-card-loc">Saquarema, RJ · 350 m</p>
+              <p class="card-text ot-card-tags">Cabelo · Barba</p>
+              <div class="ot-card-footer">
+                <p class="ot-card-price"><strong>R$ 45</strong> <span>a partir de</span></p>
+                <button class="btn btn-danger rounded-pill">Agendar</button>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="col-12 col-sm-6 col-lg-4 col-xxl-3 card-salao" data-index="4">
+          <article class="card service-card ot-card">
+            <div class="ot-card-media">
+              <img src="https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=900&q=80" alt="Nail Atelier Praia" loading="lazy">
+              <button class="ot-fav" type="button" aria-label="Favoritar">
+                <i class="bi bi-heart"></i>
+              </button>
+              <span class="ot-badge ot-badge-top">Top avaliado</span>
+            </div>
+            <div class="card-body ot-card-body">
+              <div class="ot-card-row">
+                <h5 class="card-title">Nail Atelier Praia</h5>
+                <span class="ot-rating"><i class="bi bi-star-fill"></i> 4.9</span>
+              </div>
+              <p class="card-text ot-card-loc">Saquarema, RJ · 750 m</p>
+              <p class="card-text ot-card-tags">Unhas · Sobrancelhas</p>
+              <div class="ot-card-footer">
+                <p class="ot-card-price"><strong>R$ 55</strong> <span>a partir de</span></p>
+                <button class="btn btn-danger rounded-pill">Agendar</button>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- Card 5 -->
+        <div class="col-12 col-sm-6 col-lg-4 col-xxl-3 card-salao" data-index="5">
+          <article class="card service-card ot-card">
+            <div class="ot-card-media">
+              <img src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=900&q=80" alt="Zen Spa & Massagens" loading="lazy">
+              <button class="ot-fav" type="button" aria-label="Favoritar">
+                <i class="bi bi-heart"></i>
+              </button>
+              <span class="ot-badge">Novidade</span>
+            </div>
+            <div class="card-body ot-card-body">
+              <div class="ot-card-row">
+                <h5 class="card-title">Zen Spa &amp; Massagens</h5>
+                <span class="ot-rating"><i class="bi bi-star-fill"></i> 4.9</span>
+              </div>
+              <p class="card-text ot-card-loc">Saquarema, RJ · 1,4 km</p>
+              <p class="card-text ot-card-tags">Massagem · Rosto</p>
+              <div class="ot-card-footer">
+                <p class="ot-card-price"><strong>R$ 120</strong> <span>a partir de</span></p>
+                <button class="btn btn-danger rounded-pill">Agendar</button>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- Card 6 -->
+        <div class="col-12 col-sm-6 col-lg-4 col-xxl-3 card-salao" data-index="6">
+          <article class="card service-card ot-card">
+            <div class="ot-card-media">
+              <img src="https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=80" alt="Dermo Clínica Lumière" loading="lazy">
+              <button class="ot-fav" type="button" aria-label="Favoritar">
+                <i class="bi bi-heart"></i>
+              </button>
+              <span class="ot-badge">Verificado</span>
+            </div>
+            <div class="card-body ot-card-body">
+              <div class="ot-card-row">
+                <h5 class="card-title">Dermo Clínica Lumière</h5>
+                <span class="ot-rating"><i class="bi bi-star-fill"></i> 4.8</span>
+              </div>
+              <p class="card-text ot-card-loc">Saquarema, RJ · 2,0 km</p>
+              <p class="card-text ot-card-tags">Rosto · Depilação</p>
+              <div class="ot-card-footer">
+                <p class="ot-card-price"><strong>R$ 180</strong> <span>a partir de</span></p>
+                <button class="btn btn-danger rounded-pill">Agendar</button>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- Card 7 -->
+        <div class="col-12 col-sm-6 col-lg-4 col-xxl-3 card-salao" data-index="7">
+          <article class="card service-card ot-card">
+            <div class="ot-card-media">
+              <img src="https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?auto=format&fit=crop&w=900&q=80" alt="Cílios & Brow Lab" loading="lazy">
+              <button class="ot-fav" type="button" aria-label="Favoritar">
+                <i class="bi bi-heart"></i>
+              </button>
+            </div>
+            <div class="card-body ot-card-body">
+              <div class="ot-card-row">
+                <h5 class="card-title">Cílios &amp; Brow Lab</h5>
+                <span class="ot-rating"><i class="bi bi-star-fill"></i> 4.7</span>
+              </div>
+              <p class="card-text ot-card-loc">Saquarema, RJ · 900 m</p>
+              <p class="card-text ot-card-tags">Sobrancelhas · Cílios · Rosto</p>
+              <div class="ot-card-footer">
+                <p class="ot-card-price"><strong>R$ 80</strong> <span>a partir de</span></p>
+                <button class="btn btn-danger rounded-pill">Agendar</button>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- Card 8 -->
+        <div class="col-12 col-sm-6 col-lg-4 col-xxl-3 card-salao" data-index="8">
+          <article class="card service-card ot-card">
+            <div class="ot-card-media">
+              <img src="https://images.unsplash.com/photo-1562322140-8baeececf3df?auto=format&fit=crop&w=900&q=80" alt="Salão Modernitá" loading="lazy">
+              <button class="ot-fav" type="button" aria-label="Favoritar">
+                <i class="bi bi-heart"></i>
+              </button>
+            </div>
+            <div class="card-body ot-card-body">
+              <div class="ot-card-row">
+                <h5 class="card-title">Salão Modernitá</h5>
+                <span class="ot-rating"><i class="bi bi-star-fill"></i> 4.6</span>
+              </div>
+              <p class="card-text ot-card-loc">Saquarema, RJ · 1,7 km</p>
+              <p class="card-text ot-card-tags">Cabelo · Unhas</p>
+              <div class="ot-card-footer">
+                <p class="ot-card-price"><strong>R$ 90</strong> <span>a partir de</span></p>
+                <button class="btn btn-danger rounded-pill">Agendar</button>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- Card 9 -->
+        <div class="col-12 col-sm-6 col-lg-4 col-xxl-3 card-salao" data-index="9">
+          <article class="card service-card ot-card">
+            <div class="ot-card-media">
+              <img src="https://images.unsplash.com/photo-1519823551278-64ac92734fb1?auto=format&fit=crop&w=900&q=80" alt="Espaço Holístico Vital" loading="lazy">
+              <button class="ot-fav" type="button" aria-label="Favoritar">
+                <i class="bi bi-heart"></i>
+              </button>
+              <span class="ot-badge ot-badge-top">Excelência 5.0</span>
+            </div>
+            <div class="card-body ot-card-body">
+              <div class="ot-card-row">
+                <h5 class="card-title">Espaço Holístico Vital</h5>
+                <span class="ot-rating"><i class="bi bi-star-fill"></i> 5.0</span>
+              </div>
+              <p class="card-text ot-card-loc">Saquarema, RJ · 2,3 km</p>
+              <p class="card-text ot-card-tags">Massagem · Rosto · Depilação</p>
+              <div class="ot-card-footer">
+                <p class="ot-card-price"><strong>R$ 140</strong> <span>a partir de</span></p>
                 <button class="btn btn-danger rounded-pill">Agendar</button>
               </div>
             </div>

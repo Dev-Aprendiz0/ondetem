@@ -381,6 +381,74 @@ a:hover { color: var(--cor-acento); }
     padding: 0 24px;
 }
 
+/* Cabeçalho do grid (h1 + pills de filtro) */
+.ot-grid-heading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin: 4px 0 20px;
+}
+.ot-grid-heading h1 {
+    font-size: 1.55rem;
+    font-weight: 700;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+}
+.ot-grid-heading p {
+    font-size: 0.92rem;
+    color: var(--cor-texto-suave);
+}
+.ot-grid-heading-meta {
+    display: inline-flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.ot-pill-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: 1px solid var(--cor-border);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--cor-dark);
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: box-shadow var(--duracao-transicao) var(--easing),
+                border-color var(--duracao-transicao) var(--easing);
+}
+.ot-pill-filter:hover {
+    border-color: var(--cor-dark);
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+}
+.ot-pill-filter i { font-size: 0.9rem; }
+.ot-switch {
+    width: 28px;
+    height: 16px;
+    background: var(--cor-border);
+    border-radius: 999px;
+    position: relative;
+    display: inline-block;
+}
+.ot-switch-dot {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0,0,0,.2);
+}
+@media (max-width: 575.98px) {
+    .ot-grid-heading h1 { font-size: 1.25rem; }
+    .ot-grid-heading-meta { width: 100%; }
+}
+
 /* Card estilo Airbnb */
 .ot-card {
     background: transparent;
