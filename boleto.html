@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Boleto Editável</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Roboto', Arial, Helvetica, sans-serif;
+      background: #f0f0f0;
+      color: #333;
+      padding: 20px;
+    }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      max-width: 790px;
+      margin: 0 auto 16px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .toolbar button {
+      padding: 10px 22px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: .2s;
+    }
+    .btn-print {
+      background: #1a73e8;
+      color: #fff;
+    }
+    .btn-print:hover { background: #1558b0; }
+    .btn-reset {
+      background: #e74c3c;
+      color: #fff;
+    }
+    .btn-reset:hover { background: #c0392b; }
+    .toolbar .hint {
+      font-size: 13px;
+      color: #666;
+      margin-left: auto;
+    }
+
+    /* ── Page wrapper ── */
+    .boleto-page {
+      width: 790px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 30px 32px 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.15);
+    }
+
+    /* ── Editable fields ── */
+    .editable {
+      background: #fffde7;
+      border: 1px dashed #f9a825;
+      border-radius: 2px;
+      padding: 0 3px;
+      outline: none;
+      min-width: 30px;
+      display: inline-block;
+      transition: background .2s;
+    }
+    .editable:focus {
+      background: #fff9c4;
+      border-color: #f57f17;
+    }
+
+    @media print {
+      body { background: #fff; padding: 0; }
+      .toolbar { display: none !important; }
+      .boleto-page {
+        box-shadow: none;
+        width: 100%;
+        padding: 10px 15px 5px;
+      }
+      .editable {
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+      }
+    }
+
+    /* ── Header: company info ── */
+    .header-company {
+      margin-bottom: 6px;
+    }
+    .header-company .company-name {
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .header-company .company-detail {
+      font-size: 12px;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    /* ── Client / Cobranca / Vencimento row ── */
+    .client-row {
+      display: flex;
+      border: 1px solid #ccc;
+      margin-bottom: 8px;
+    }
+    .client-row .cell {
+      padding: 5px 10px;
+      border-right: 1px solid #ccc;
+      flex: 1;
+    }
+    .client-row .cell:last-child { border-right: none; }
+    .cell-label {
+      font-size: 9px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .cell-value {
+      font-size: 12px;
+      font-weight: 700;
+      margin-top: 1px;
+    }
+
+    /* ── Items table ── */
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+      font-size: 11px;
+    }
+    .items-table th {
+      background: #2c3e50;
+      color: #fff;
+      padding: 5px 8px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .items-table th:nth-child(2),
+    .items-table th:nth-child(3),
+    .items-table th:nth-child(4) { text-align: right; }
+    .items-table td {
+      padding: 4px 8px;
+      border-bottom: 1px solid #eee;
+    }
+    .items-table td:nth-child(2),
+    .items-table td:nth-child(3),
+    .items-table td:nth-child(4) { text-align: right; }
+    .items-detail {
+      font-size: 10px;
+      color: #555;
+      line-height: 1.5;
+    }
+
+    /* ── Dashed cut line ── */
+    .cut-line {
+      border: none;
+      border-top: 1px dashed #999;
+      margin: 12px 0;
+      position: relative;
+    }
+    .cut-line::after {
+      content: '✂';
+      position: absolute;
+      right: -2px;
+      top: -10px;
+      font-size: 14px;
+      color: #999;
+    }
+
+    /* ── Bank header (logo + code + barcode line) ── */
+    .bank-header {
+      display: flex;
+      align-items: center;
+      border-bottom: 2px solid #333;
+      padding-bottom: 4px;
+      margin-bottom: 4px;
+    }
+    .bank-logo {
+      height: 28px;
+      margin-right: 8px;
+    }
+    .bank-code {
+      font-size: 20px;
+      font-weight: 700;
+      color: #333;
+      padding: 0 10px;
+      border-left: 2px solid #333;
+      border-right: 2px solid #333;
+      margin-right: 10px;
+    }
+    .linha-digitavel {
+      font-size: 13px;
+      color: #333;
+      letter-spacing: 1px;
+      flex: 1;
+      text-align: right;
+    }
+
+    /* ── Boleto grid rows ── */
+    .boleto-grid {
+      display: grid;
+      border: 1px solid #999;
+      font-size: 9px;
+    }
+    .boleto-grid .g-cell {
+      border-bottom: 1px solid #999;
+      border-right: 1px solid #999;
+      padding: 2px 5px;
+      min-height: 22px;
+    }
+    .boleto-grid .g-cell:last-child { border-right: none; }
+    .g-label {
+      font-size: 8px;
+      color: #555;
+      display: block;
+      margin-bottom: 1px;
+    }
+    .g-value {
+      font-size: 9px;
+      font-weight: 700;
+      color: #333;
+      display: block;
+    }
+
+    /* Recibo do Pagador section */
+    .recibo-grid {
+      grid-template-columns: 3fr 2fr;
+    }
+    .recibo-grid .span-full {
+      grid-column: 1 / -1;
+    }
+
+    /* Ficha de Compensação - main section */
+    .ficha-grid {
+      grid-template-columns: 5fr 2fr;
+    }
+    .ficha-grid .span-full {
+      grid-column: 1 / -1;
+    }
+
+    /* Middle detail row: 6 columns */
+    .ficha-detail-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1.8fr 1fr 0.6fr 1.2fr 1.5fr;
+      border-left: 1px solid #999;
+      border-right: 1px solid #999;
+    }
+    .ficha-detail-grid .g-cell {
+      border-bottom: 1px solid #999;
+      border-right: 1px solid #999;
+      padding: 2px 5px;
+      min-height: 22px;
+    }
+    .ficha-detail-grid .g-cell:last-child { border-right: none; }
+
+    /* Bank use row: 6 cols */
+    .ficha-uso-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr 2fr;
+      border-left: 1px solid #999;
+      border-right: 1px solid #999;
+    }
+    .ficha-uso-grid .g-cell {
+      border-bottom: 1px solid #999;
+      border-right: 1px solid #999;
+      padding: 2px 5px;
+      min-height: 22px;
+    }
+    .ficha-uso-grid .g-cell:last-child { border-right: none; }
+
+    /* Instructions + values section */
+    .ficha-instrucoes {
+      display: grid;
+      grid-template-columns: 5fr 2fr;
+      border-left: 1px solid #999;
+      border-right: 1px solid #999;
+    }
+    .ficha-instrucoes .g-cell {
+      border-bottom: 1px solid #999;
+      border-right: 1px solid #999;
+      padding: 2px 5px;
+      min-height: 22px;
+    }
+    .ficha-instrucoes .g-cell:last-child { border-right: none; }
+    .instrucoes-left {
+      grid-row: 1 / 5;
+    }
+    .instrucoes-text {
+      font-size: 9px;
+      color: #333;
+      line-height: 1.5;
+    }
+
+    /* QR Code section */
+    .qr-section {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .qr-section img {
+      width: 80px;
+      height: 80px;
+    }
+    .qr-label {
+      font-size: 8px;
+      color: #555;
+      writing-mode: vertical-lr;
+      transform: rotate(180deg);
+    }
+
+    /* Pagador section */
+    .pagador-section {
+      border: 1px solid #999;
+      border-top: none;
+      padding: 3px 5px;
+    }
+
+    /* Barcode bottom */
+    .barcode-bottom {
+      margin-top: 6px;
+      text-align: left;
+    }
+    .barcode-bottom img {
+      height: 40px;
+    }
+
+    /* Auth line */
+    .auth-line {
+      text-align: right;
+      font-size: 9px;
+      font-weight: 700;
+      color: #333;
+      margin-top: 2px;
+      margin-bottom: 4px;
+    }
+
+    /* Recibo do Pagador label */
+    .recibo-label {
+      text-align: right;
+      font-size: 9px;
+      font-weight: 700;
+      color: #333;
+      border-top: 1px solid #999;
+      padding-top: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <button class="btn-print" onclick="window.print()">Imprimir / Salvar PDF</button>
+    <button class="btn-reset" onclick="resetFields()">Restaurar Original</button>
+    <span class="hint">Clique nos campos destacados em amarelo para editar</span>
+  </div>
+
+  <div class="boleto-page" id="boletoPage">
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <!--             HEADER: EMPRESA                    -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <div class="header-company">
+      <div class="company-name"><span class="editable" contenteditable="true" data-field="empresa_nome">Axon Telecom</span></div>
+      <div class="company-detail">CNPJ: <span class="editable" contenteditable="true" data-field="empresa_cnpj">17.939.967/0001-36</span></div>
+      <div class="company-detail">E-mail: <span class="editable" contenteditable="true" data-field="empresa_email">financeiro@axontelecom.com.br</span></div>
+      <div class="company-detail">Telefone: <span class="editable" contenteditable="true" data-field="empresa_telefone">2231999928</span></div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <!--       CLIENTE / COBRANCA / VENCIMENTO          -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <div class="client-row">
+      <div class="cell">
+        <div class="cell-label">CLIENTE</div>
+        <div class="cell-value"><span class="editable" contenteditable="true" data-field="cliente_nome">IAGO PINTO AZEREDO</span></div>
+      </div>
+      <div class="cell">
+        <div class="cell-label">COBRANCA</div>
+        <div class="cell-value"><span class="editable" contenteditable="true" data-field="cobranca_numero">122262</span></div>
+      </div>
+      <div class="cell">
+        <div class="cell-label">VENCIMENTO</div>
+        <div class="cell-value"><span class="editable" contenteditable="true" data-field="vencimento_header">15/04/2026</span></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <!--              TABELA DE ITENS                   -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th>Descricao</th>
+          <th>Valor (R$)</th>
+          <th>Quantidade</th>
+          <th>Total (R$)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <span class="editable" contenteditable="true" data-field="fatura_ref">Fatura: 234009 / Parcela: 1</span>
+            <div class="items-detail">ITENS DA FATURA:</div>
+            <div class="items-detail"><span class="editable" contenteditable="true" data-field="item_descricao">0100401 - ASSINATURA DE SERVICOS DE COMUNICACAO MULTIMIDIA / Contrato N 1164, CONTRATO PLANOS PROMOCIONAIS, Plano(s): [55] - 450 Mega Promocao - R$ 9</span></div>
+          </td>
+          <td><span class="editable" contenteditable="true" data-field="item_valor">95,00</span></td>
+          <td><span class="editable" contenteditable="true" data-field="item_qtd">1</span></td>
+          <td><span class="editable" contenteditable="true" data-field="item_total">95,00</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <!--          RECIBO DO PAGADOR (1a via)            -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <hr class="cut-line">
+
+    <div class="bank-header">
+      <img class="bank-logo" src="img/boleto/image_0.png" alt="Logo Banco">
+      <div class="bank-code"><span class="editable" contenteditable="true" data-field="banco_codigo">301-8</span></div>
+      <div class="linha-digitavel"><span class="editable" contenteditable="true" data-field="linha_digitavel">30190.00003 16077.710008 80296.072046 1 14170000009500</span></div>
+    </div>
+
+    <div class="boleto-grid recibo-grid">
+      <!-- Row 1 -->
+      <div class="g-cell">
+        <span class="g-label">Beneficiario</span>
+        <span class="g-value"><span class="editable" contenteditable="true" data-field="beneficiario">G+B Sistema e Automacao Ltda-Me - CNPJ: 17.939.967/0001-36</span></span>
+      </div>
+      <div class="g-cell">
+        <span class="g-label">Numero do Documento</span>
+        <span class="g-value"><span class="editable" contenteditable="true" data-field="numero_documento">23200000332700008029607</span></span>
+      </div>
+      <!-- Row 2 -->
+      <div class="g-cell">
+        <span class="g-label">Endereco do Beneficiario</span>
+        <span class="g-value"><span class="editable" contenteditable="true" data-field="endereco_beneficiario">Rua Jose do Bejo Amorim, 58 - Bacaxa (Bacaxa) - Saquarema / RJ - CEP 28994-717</span></span>
+      </div>
+      <div class="g-cell">
+        <span class="g-label">Data de Vencimento</span>
+        <span class="g-value"><span class="editable" contenteditable="true" data-field="data_vencimento">15/04/2026</span></span>
+      </div>
+      <!-- Row 3: Pagador spans left, right has Agencia + Nosso Numero + Valor -->
+      <div class="g-cell" style="grid-row: span 3;">
+        <span class="g-label">Pagador</span>
+        <span class="g-value"><span class="editable" contenteditable="true" data-field="pagador_nome_cpf">IAGO PINTO AZEREDO - CPF: 118.003.347-70</span></span>
+        <span class="g-value"><span class="editable" contenteditable="true" data-field="pagador_endereco">Rua Pereira, 445 - Bacaxa (Bacaxa)</span></span>
+        <span class="g-value"><span class="editable" contenteditable="true" data-field="pagador_cidade_cep">Saquarema / RJ - CEP 28994-657</span></span>
+      </div>
+      <div class="g-cell">
+        <span class="g-label">Agencia / Codigo do Beneficiario</span>
+        <span class="g-value"><span class="editable" contenteditable="true" data-field="agencia_codigo">1 / 17939967000136</span></span>
+      </div>
+      <div class="g-cell">
+        <span class="g-label">Nosso Numero</span>
+        <span class="g-value"><span class="editable" contenteditable="true" data-field="nosso_numero">0008029607</span></span>
+      </div>
+      <div class="g-cell">
+        <span class="g-label">Valor do Documento</span>
+        <span class="g-value"><span class="editable" contenteditable="true" data-field="valor_documento">95,00</span></span>
+      </div>
+    </div>
+
+    <div class="recibo-label">Recibo do Pagador</div>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <!--        FICHA DE COMPENSACAO (2a via)           -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <hr class="cut-line">
+
+    <div class="bank-header">
+      <img class="bank-logo" src="img/boleto/image_0.png" alt="Logo Banco">
+      <div class="bank-code"><span class="editable" contenteditable="true" data-field="banco_codigo_2">301-8</span></div>
+      <div class="linha-digitavel"><span class="editable" contenteditable="true" data-field="linha_digitavel_2">30190.00003 16077.710008 80296.072046 1 14170000009500</span></div>
+    </div>
+
+    <!-- Row: Local de Pagamento | Data de Vencimento -->
+    <div class="boleto-grid ficha-grid">
+      <div class="g-cell">
+        <span class="g-label">Local de Pagamento</span>
+        <span class="g-value"><span class="editable" contenteditable="true" data-field="local_pagamento">Pagavel em qualquer banco ou loterica mesmo apos o vencimento</span></span>
+      </div>
+      <div class="g-cell">
+        <span class="g-label">Data de Vencimento</span>
+        <span class="g-value"><span class="editable" contenteditable="true" data-field="data_vencimento_2">15/04/2026</span></span>
+      </div>
+      <!-- Row: Beneficiario | Agencia -->
+      <div class="g-cell">
+        <span class="g-label">Beneficiario</span>
+        <span class="g-value"><span class="editable" contenteditable="true" data-field="beneficiario_2">G+B Sistema e Automacao Ltda-Me - CNPJ: 17.939.967/0001-36</span></span>
+      </div>
+      <div class="g-cell">
+        <span class="g-label">Agencia / Codigo do Beneficiario</span>
+        <span class="g-value"><span class="editable" contenteditable="true" data-field="agencia_codigo_2">1 / 17939967000136</span></span>
+      </div>
+    </div>
+
+    <!-- Detail row: Data Doc | Num Doc | Especie Doc | Aceite | Data Processamento | Nosso Numero -->
+    <div class="ficha-detail-grid">
+      <div class="g-cell">
+        <span class="g-label">Data do Documento</span>
+        <span class="g-value"><span class="editable" contenteditable="true" data-field="data_documento">31/03/2026</span></span>
+      </div>
+      <div class="g-cell">
+        <span class="g-label">Numero do Documento</span>
+        <span class="g-value"><span class="editable" contenteditable="true" data-field="numero_documento_2">23200000332700008029607</span></span>
+      </div>
+      <div class="g-cell">
+        <span class="g-label">Especie do Documento</span>
+        <span class="g-value"><span class="editable" contenteditable="true" data-field="especie_documento">DM</span></span>
+      </div>
+      <div class="g-cell">
+        <span class="g-label">Aceite</span>
+        <span class="g-value"><span class="editable" contenteditable="true" data-field="aceite">N</span></span>
+      </div>
+      <div class="g-cell">
+        <span class="g-label">Data do Processamento</span>
+        <span class="g-value"><span class="editable" contenteditable="true" data-field="data_processamento">31/03/2026</span></span>
+      </div>
+      <div class="g-cell">
+        <span class="g-label">Nosso Numero</span>
+        <span class="g-value"><span class="editable" contenteditable="true" data-field="nosso_numero_2">0008029607</span></span>
+      </div>
+    </div>
+
+    <!-- Uso do Banco row -->
+    <div class="ficha-uso-grid">
+      <div class="g-cell">
+        <span class="g-label">Uso do Banco</span>
+        <span class="g-value">&nbsp;</span>
+      </div>
+      <div class="g-cell">
+        <span class="g-label">Carteira</span>
+        <span class="g-value">&nbsp;</span>
+      </div>
+      <div class="g-cell">
+        <span class="g-label">Especie</span>
+        <span class="g-value">R$</span>
+      </div>
+      <div class="g-cell">
+        <span class="g-label">Quantidade</span>
+        <span class="g-value">&nbsp;</span>
+      </div>
+      <div class="g-cell">
+        <span class="g-label">Valor</span>
+        <span class="g-value">&nbsp;</span>
+      </div>
+      <div class="g-cell">
+        <span class="g-label">(=) Valor do Documento</span>
+        <span class="g-value"><span class="editable" contenteditable="true" data-field="valor_documento_2">95,00</span></span>
+      </div>
+    </div>
+
+    <!-- Instructions + Right column (Descontos, Mora, Valor Cobrado) -->
+    <div class="ficha-instrucoes">
+      <div class="g-cell instrucoes-left">
+        <span class="g-label">Instrucoes (Texto de Responsabilidade do Beneficiario)</span>
+        <div class="instrucoes-text">
+          <span class="editable" contenteditable="true" data-field="instrucoes">Ate 15/04/2026 receber o valor de R$ 85,00 (Desconto de R$ 10,00).<br>Pague esta fatura com Pix pelo QR Code atraves do app do seu banco.</span>
+        </div>
+        <div class="qr-section">
+          <div>
+            <div style="font-size:8px;color:#555;margin-bottom:3px;">Pague via QR Code Pix</div>
+            <img src="img/boleto/image_2.png" alt="QR Code Pix">
+          </div>
+        </div>
+      </div>
+      <div class="g-cell">
+        <span class="g-label">(-) Descontos / Abatimentos</span>
+        <span class="g-value"><span class="editable" contenteditable="true" data-field="descontos">&nbsp;</span></span>
+      </div>
+      <div class="g-cell">
+        <span class="g-label">(+) Mora / Multa / Juros</span>
+        <span class="g-value"><span class="editable" contenteditable="true" data-field="mora_multa">&nbsp;</span></span>
+      </div>
+      <div class="g-cell">
+        <span class="g-label">(=) Valor Cobrado</span>
+        <span class="g-value"><span class="editable" contenteditable="true" data-field="valor_cobrado">&nbsp;</span></span>
+      </div>
+    </div>
+
+    <!-- Pagador section -->
+    <div class="pagador-section">
+      <span class="g-label">Pagador</span>
+      <span class="g-value"><span class="editable" contenteditable="true" data-field="pagador_nome_cpf_2">IAGO PINTO AZEREDO - CPF: 118.003.347-70</span></span>
+      <span class="g-value"><span class="editable" contenteditable="true" data-field="pagador_endereco_2">Rua Pereira, 445 - Bacaxa (Bacaxa)</span></span>
+      <span class="g-value"><span class="editable" contenteditable="true" data-field="pagador_cidade_cep_2">Saquarema / RJ - CEP 28994-657</span></span>
+    </div>
+
+    <!-- Auth line -->
+    <div class="auth-line">Autenticacao Mecanica - Ficha de Compensacao</div>
+
+    <!-- Barcode -->
+    <div class="barcode-bottom">
+      <img src="img/boleto/image_3.png" alt="Codigo de Barras" style="width:100%;max-height:50px;">
+    </div>
+
+  </div><!-- /boleto-page -->
+
+  <script>
+    // Save/restore editable fields to localStorage
+    const STORAGE_KEY = 'boleto_editavel_data';
+
+    function saveFields() {
+      const data = {};
+      document.querySelectorAll('.editable').forEach(el => {
+        const field = el.getAttribute('data-field');
+        if (field) data[field] = el.innerHTML;
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function loadFields() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      try {
+        const data = JSON.parse(raw);
+        document.querySelectorAll('.editable').forEach(el => {
+          const field = el.getAttribute('data-field');
+          if (field && data[field] !== undefined) {
+            el.innerHTML = data[field];
+          }
+        });
+      } catch (e) { /* ignore */ }
+    }
+
+    function resetFields() {
+      if (!confirm('Restaurar todos os campos para os valores originais?')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      location.reload();
+    }
+
+    // Auto-save on every edit
+    document.addEventListener('input', e => {
+      if (e.target.classList.contains('editable') || e.target.closest('.editable')) {
+        saveFields();
+      }
+    });
+
+    // Load saved data on page load
+    loadFields();
+  </script>
+</body>
+</html>
