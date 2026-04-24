@@ -303,22 +303,37 @@
       line-height: 1.5;
     }
 
+    /* Instrucoes inner layout: text left, QR right */
+    .instrucoes-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .instrucoes-inner .instrucoes-text-block {
+      flex: 1;
+    }
+
     /* QR Code section */
     .qr-section {
       display: flex;
       align-items: center;
-      gap: 6px;
-      margin-top: 6px;
+      gap: 4px;
+      flex-shrink: 0;
     }
-    .qr-section img {
-      width: 80px;
-      height: 80px;
+    .qr-section .qr-pix-label-img {
+      width: 22px;
+      height: auto;
     }
-    .qr-label {
-      font-size: 8px;
+    .qr-section .qr-code-img {
+      width: 90px;
+      height: 90px;
+    }
+    .qr-label-text {
+      font-size: 7px;
       color: #555;
-      writing-mode: vertical-lr;
-      transform: rotate(180deg);
+      text-align: center;
+      margin-bottom: 2px;
     }
 
     /* Pagador section */
@@ -568,13 +583,18 @@
     <div class="ficha-instrucoes">
       <div class="g-cell instrucoes-left">
         <span class="g-label">Instrucoes (Texto de Responsabilidade do Beneficiario)</span>
-        <div class="instrucoes-text">
-          <span class="editable" contenteditable="true" data-field="instrucoes">Ate 15/04/2026 receber o valor de R$ 85,00 (Desconto de R$ 10,00).<br>Pague esta fatura com Pix pelo QR Code atraves do app do seu banco.</span>
-        </div>
-        <div class="qr-section">
-          <div>
-            <div style="font-size:8px;color:#555;margin-bottom:3px;">Pague via QR Code Pix</div>
-            <img src="img/boleto/image_2.png" alt="QR Code Pix">
+        <div class="instrucoes-inner">
+          <div class="instrucoes-text-block">
+            <div class="instrucoes-text">
+              <span class="editable" contenteditable="true" data-field="instrucoes">Ate 15/04/2026 receber o valor de R$ 85,00 (Desconto de R$ 10,00).<br>Pague esta fatura com Pix pelo QR Code atraves do app do seu banco.</span>
+            </div>
+          </div>
+          <div class="qr-section">
+            <div>
+              <div class="qr-label-text">Pague via QR Code Pix</div>
+              <img class="qr-pix-label-img" src="img/boleto/image_1.png" alt="Pix Label">
+            </div>
+            <img class="qr-code-img" src="img/boleto/image_2.png" alt="QR Code Pix">
           </div>
         </div>
       </div>
